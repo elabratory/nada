@@ -19,24 +19,48 @@
   --animate-bar: bar 1.4s ease-in-out infinite;
 
   @keyframes rise {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   @keyframes scan {
-    0% { left: 0%; }
-    100% { left: 100%; }
+    0% {
+      left: 0%;
+    }
+    100% {
+      left: 100%;
+    }
   }
   @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
-    50% { transform: translateY(-8px) rotate(var(--r, 0deg)); }
+    0%,
+    100% {
+      transform: translateY(0) rotate(var(--r, 0deg));
+    }
+    50% {
+      transform: translateY(-8px) rotate(var(--r, 0deg));
+    }
   }
   @keyframes bar {
-    0%, 100% { transform: scaleY(0.7); }
-    50% { transform: scaleY(1); }
+    0%,
+    100% {
+      transform: scaleY(0.7);
+    }
+    50% {
+      transform: scaleY(1);
+    }
   }
 }
 
@@ -69,7 +93,9 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;

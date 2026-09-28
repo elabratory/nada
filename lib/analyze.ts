@@ -148,7 +148,7 @@ Return up to ${want} clips, best first. If the video is short, return fewer rath
   const parsed = res.parsed_output;
   if (!parsed) throw new Error("The AI returned an unreadable clip list. Please try again.");
 
-  return refineCandidates(parsed.clips, sentences, count);
+  return refineCandidates(parsed.clips, sentences, count, videoDuration);
 }
 
 /** Clamps AI picks to valid sentence ranges, enforces duration limits and removes overlaps. */
@@ -156,6 +156,7 @@ export function refineCandidates(
   raw: z.infer<typeof ClipSchema>["clips"],
   sentences: Sentence[],
   count: number,
+  videoDuration: number,
 ): ClipCandidate[] {
   const last = sentences.length - 1;
   const out: ClipCandidate[] = [];
@@ -176,7 +177,9 @@ export function refineCandidates(
     const prevEnd = a > 0 ? sentences[a - 1].end : 0;
     const nextStart = b < last ? sentences[b + 1].start : sentences[b].end + 1;
     const start = Math.max(prevEnd, sentences[a].start - 0.2, 0);
-    const end = Math.min(nextStart, sentences[b].end + 0.4);
+    const end = Math.min(nextStart, sentences[b].end + 0.4, videoDuration);
+    // Transcription can occasionally emit timestamps past the end of the video.
+    if (end - start < 5) continue;
 
     const overlaps = out.some((o) => {
       const inter = Math.min(o.end, end) - Math.max(o.start, start);

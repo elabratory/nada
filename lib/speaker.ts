@@ -44,9 +44,11 @@ export async function locateSpeaker(
       "4",
       file,
     ]);
-    images.push((await fs.readFile(file)).toString("base64"));
+    const data = await fs.readFile(file).catch(() => null);
     await fs.rm(file, { force: true });
+    if (data) images.push(data.toString("base64"));
   }
+  if (images.length === 0) return null;
 
   const res = await withFallbacks((fb) =>
     anthropic().beta.messages.parse({

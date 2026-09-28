@@ -1,6 +1,5 @@
 import { createReadStream, promises as fs } from "node:fs";
 import path from "node:path";
-import { Readable } from "node:stream";
 import { JOBS_DIR, UPLOADS_DIR, isValidId } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -12,6 +11,29 @@ const TYPES: Record<string, string> = {
   webm: "video/webm",
 };
 const FILE_RE = /^[a-z0-9_]+\.(mp4|mov|webm)$/;
+
+/**
+ * Pull-based file stream. Browsers cancel <video> range requests constantly while seeking;
+ * this closes the file cleanly instead of enqueueing into an already-closed controller.
+ */
+function fileStream(file: string, range?: { start: number; end: number }): ReadableStream<Uint8Array> {
+  const node = createReadStream(file, range);
+  const it = node[Symbol.asyncIterator]();
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { value, done } = await it.next();
+        if (done) controller.close();
+        else controller.enqueue(new Uint8Array(value as Buffer));
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+    cancel() {
+      node.destroy();
+    },
+  });
+}
 
 /** Streams stored videos with HTTP Range support (needed for seeking in <video>). */
 export async function GET(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
@@ -47,10 +69,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ path: string[] 
     }
     headers.set("Content-Range", `bytes ${start}-${end}/${stat.size}`);
     headers.set("Content-Length", String(end - start + 1));
-    const stream = Readable.toWeb(createReadStream(full, { start, end })) as ReadableStream;
-    return new Response(stream, { status: 206, headers });
+    return new Response(fileStream(full, { start, end }), { status: 206, headers });
   }
 
   headers.set("Content-Length", String(stat.size));
-  return new Response(Readable.toWeb(createReadStream(full)) as ReadableStream, { status: 200, headers });
+  return new Response(fileStream(full), { status: 200, headers });
 }
