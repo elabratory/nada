@@ -112,7 +112,7 @@ export default function Landing({ onPick }: { onPick: (file: File) => void }) {
                   <span
                     key={i}
                     className={`w-full max-w-[5px] rounded-full ${hot ? "bg-ember animate-bar" : "bg-white/15"}`}
-                    style={{ height: `${h * 100}%`, animationDelay: `${(i % 7) * 0.12}s` }}
+                    style={{ height: `${(h * 100).toFixed(1)}%`, animationDelay: `${(i % 7) * 0.12}s` }}
                   />
                 );
               })}

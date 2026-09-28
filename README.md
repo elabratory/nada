@@ -9,15 +9,19 @@ Turn long videos into viral short clips. Upload a video and let AI find the best
 Requirements: **Node.js 20+** (FFmpeg is bundled automatically via `ffmpeg-static`, so you don't need to install it).
 
 ```bash
-npm install                      # also downloads a static FFmpeg binary
-cp .env.example .env.local       # then open .env.local and paste your two API keys
-npm run check                    # optional: verifies Node, FFmpeg + libass, and keys
-npm run dev                      # open http://localhost:3000
+npm install      # also downloads a static FFmpeg binary
+npm run dev      # open http://localhost:3000
 ```
+
+Then click **Add API keys** (top right) and paste your two keys. They're saved to `.env.local` on your computer.
 
 For a production build: `npm run build && npm start`.
 
-## API keys (`.env.local`)
+## API keys
+
+The easiest way is the **Add API keys** button in the app. The app also asks for them the first time you click "Find Best Clips". Keys can only be saved from the machine running the app (localhost), and the app never sends them back to the browser.
+
+You can also edit `.env.local` by hand (`cp .env.example .env.local`):
 
 | Variable            | Used for                                                                                                 | Get it                                         |
 | ------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
@@ -26,7 +30,7 @@ For a production build: `npm run build && npm start`.
 
 Optional: `CLAUDE_MODEL` to override the model, `FFMPEG_PATH` to use your own FFmpeg (it must include libass).
 
-Restart `npm run dev` after editing `.env.local`.
+If you edit `.env.local` by hand, restart `npm run dev`. `npm run check` verifies Node, FFmpeg/libass and the keys.
 
 ## How it works
 

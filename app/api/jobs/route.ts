@@ -19,12 +19,7 @@ export async function POST(req: Request) {
 
   const missing = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"].filter((k) => !process.env[k]);
   if (missing.length) {
-    return Response.json(
-      {
-        error: `Missing ${missing.join(" and ")}. Add ${missing.length > 1 ? "them" : "it"} to .env.local and restart \`npm run dev\`.`,
-      },
-      { status: 500 },
-    );
+    return Response.json({ error: "Add your API keys first.", needsKeys: true }, { status: 400 });
   }
   if (!(await getVideo(parsed.data.videoId))) {
     return Response.json({ error: "Video not found. Please upload it again." }, { status: 404 });

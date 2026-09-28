@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Job, VideoMeta } from "@/lib/types";
+import KeysDialog, { type KeyStatus } from "./KeysDialog";
 import Landing from "./Landing";
 import Processing, { Uploading } from "./Processing";
 import Results from "./Results";
@@ -30,6 +31,17 @@ export default function ClipForge() {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
+  const [keys, setKeys] = useState<KeyStatus | null>(null);
+  const [keysOpen, setKeysOpen] = useState(false);
+  const [resumeAfterKeys, setResumeAfterKeys] = useState(false);
+  const keysReady = Boolean(keys?.OPENAI_API_KEY && keys?.ANTHROPIC_API_KEY);
+
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then(setKeys)
+      .catch(() => {});
+  }, []);
 
   // Restore state from the URL on first load.
   useEffect(() => {
@@ -117,6 +129,11 @@ export default function ClipForge() {
   const generate = useCallback(async () => {
     if (!video) return;
     setError(null);
+    if (keys && !keysReady) {
+      setResumeAfterKeys(true);
+      setKeysOpen(true);
+      return;
+    }
     setStarting(true);
     try {
       const r = await fetch("/api/jobs", {
@@ -125,6 +142,11 @@ export default function ClipForge() {
         body: JSON.stringify({ videoId: video.id, ...settings }),
       });
       const body = await r.json();
+      if (body.needsKeys) {
+        setResumeAfterKeys(true);
+        setKeysOpen(true);
+        return;
+      }
       if (!r.ok) throw new Error(body.error || "Could not start processing.");
       setJob(body);
       setView("processing");
@@ -135,7 +157,15 @@ export default function ClipForge() {
     } finally {
       setStarting(false);
     }
-  }, [video, settings]);
+  }, [video, settings, keys, keysReady]);
+
+  // After keys are saved from the "Find Best Clips" prompt, continue automatically.
+  useEffect(() => {
+    if (resumeAfterKeys && keysReady && !keysOpen) {
+      setResumeAfterKeys(false);
+      void generate();
+    }
+  }, [resumeAfterKeys, keysReady, keysOpen, generate]);
 
   const reset = () => {
     xhrRef.current?.abort();
@@ -157,11 +187,22 @@ export default function ClipForge() {
     <div className="min-h-dvh">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <Logo onClick={reset} />
-        {view !== "landing" && (
-          <button onClick={reset} className="text-sm text-mute transition-colors hover:text-white">
-            Start over
-          </button>
-        )}
+        <div className="flex items-center gap-5">
+          {view !== "landing" && (
+            <button onClick={reset} className="text-sm text-mute transition-colors hover:text-white">
+              Start over
+            </button>
+          )}
+          {keys && (
+            <button
+              onClick={() => setKeysOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-line px-3.5 py-1.5 text-sm text-white/80 transition-colors hover:border-white/25 hover:text-white"
+            >
+              <span className={`h-2 w-2 rounded-full ${keysReady ? "bg-emerald-400" : "bg-ember animate-pulse"}`} />
+              {keysReady ? "AI connected" : "Add API keys"}
+            </button>
+          )}
+        </div>
       </header>
 
       {error && (
@@ -173,6 +214,20 @@ export default function ClipForge() {
             </button>
           </div>
         </div>
+      )}
+
+      {keysOpen && keys && (
+        <KeysDialog
+          status={keys}
+          onClose={() => {
+            setKeysOpen(false);
+            setResumeAfterKeys(false);
+          }}
+          onSaved={(s) => {
+            setKeys(s);
+            setKeysOpen(false);
+          }}
+        />
       )}
 
       {view === "landing" && <Landing onPick={pickFile} />}
