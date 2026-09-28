@@ -1,0 +1,83 @@
+{
+  "_comment": "TEST DATA - every value in this file is fictional and must be replaced with the client's real details before launch. The phone number is from Ofcom's reserved drama range and the domain uses the reserved .example TLD, so neither reaches anyone.",
+  "name": "Harbour & Hale Barbers",
+  "shortName": "Harbour & Hale",
+  "businessType": "Barber shop",
+  "schemaType": "BarberShop",
+  "tagline": "Sharp cuts, clean fades and proper hot towel shaves in the heart of Bristol.",
+  "description": "Harbour & Hale is a barber shop on Market Street, Bristol, offering men's haircuts, skin fades, beard trims, hot towel shaves and kids' cuts. Walk in or call ahead.",
+  "siteUrl": "https://www.harbourandhale.example",
+  "locale": "en-GB",
+  "timeZone": "Europe/London",
+  "currency": "GBP",
+  "phone": {
+    "display": "0117 496 0123",
+    "e164": "+441174960123"
+  },
+  "email": "bookings@harbourandhale.example",
+  "address": {
+    "street": "14 Market Street",
+    "locality": "Bristol",
+    "postalCode": "BS1 1AA",
+    "country": "GB",
+    "countryName": "United Kingdom"
+  },
+  "mapsQuery": "Harbour & Hale Barbers, 14 Market Street, Bristol BS1 1AA",
+  "hours": [
+    { "day": "Monday", "closed": true },
+    { "day": "Tuesday", "open": "09:00", "close": "18:00" },
+    { "day": "Wednesday", "open": "09:00", "close": "18:00" },
+    { "day": "Thursday", "open": "09:00", "close": "19:30" },
+    { "day": "Friday", "open": "09:00", "close": "18:00" },
+    { "day": "Saturday", "open": "08:30", "close": "16:00" },
+    { "day": "Sunday", "open": "10:00", "close": "14:00" }
+  ],
+  "services": [
+    {
+      "name": "Classic Haircut",
+      "price": 22,
+      "duration": 30,
+      "description": "Scissor or clipper cut to your preferred style, finished with a neck shave and styling product."
+    },
+    {
+      "name": "Skin Fade",
+      "price": 25,
+      "duration": 40,
+      "description": "Fade taken down to the skin and blended into the length you want on top."
+    },
+    {
+      "name": "Haircut & Beard Trim",
+      "price": 32,
+      "duration": 50,
+      "description": "Any haircut plus a full beard shape-up with clean lines and a straight-razor finish."
+    },
+    {
+      "name": "Beard Trim & Shape",
+      "price": 12,
+      "duration": 20,
+      "description": "Beard trimmed to length, shaped and lined up, finished with beard oil."
+    },
+    {
+      "name": "Hot Towel Shave",
+      "price": 25,
+      "duration": 40,
+      "description": "Traditional straight-razor shave with pre-shave oil, hot towels and a cooling balm."
+    },
+    {
+      "name": "Buzz Cut",
+      "price": 14,
+      "duration": 20,
+      "description": "One clipper length all over, tidied at the neckline and around the ears."
+    },
+    {
+      "name": "Kids' Cut (under 12)",
+      "price": 16,
+      "duration": 25,
+      "description": "Haircut for children under 12, any style."
+    }
+  ],
+  "form": {
+    "_comment": "Paste a Formspree (https://formspree.io/f/xxxx) or compatible JSON endpoint here. When empty, the contact form opens the visitor's email app with the message pre-filled and addressed to the email above.",
+    "endpoint": ""
+  }
+}
