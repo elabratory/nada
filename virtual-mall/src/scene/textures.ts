@@ -123,6 +123,174 @@ export function woodTexture(base = '#b08968') {
   return tex;
 }
 
+/** Deterministic PRNG so generated materials look the same on every load. */
+function rng(seed: number) {
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+/** Converts a greyscale height canvas into a tangent-space normal map. */
+function normalFromHeight(src: HTMLCanvasElement, strength: number) {
+  const w = src.width;
+  const h = src.height;
+  const hd = src.getContext('2d')!.getImageData(0, 0, w, h).data;
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  const octx = out.getContext('2d')!;
+  const img = octx.createImageData(w, h);
+  const H = (x: number, y: number) => hd[(((y + h) % h) * w + ((x + w) % w)) * 4] / 255;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const dx = (H(x + 1, y) - H(x - 1, y)) * strength;
+      const dy = (H(x, y + 1) - H(x, y - 1)) * strength;
+      const len = Math.hypot(dx, dy, 1);
+      const i = (y * w + x) * 4;
+      img.data[i] = ((-dx / len) * 0.5 + 0.5) * 255;
+      img.data[i + 1] = ((dy / len) * 0.5 + 0.5) * 255;
+      img.data[i + 2] = ((1 / len) * 0.5 + 0.5) * 255;
+      img.data[i + 3] = 255;
+    }
+  octx.putImageData(img, 0, 0);
+  return out;
+}
+
+function repeatTex(c: HTMLCanvasElement, srgb: boolean) {
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/**
+ * Polished large-format marble tiles: colour, normal (recessed grout) and
+ * roughness maps. One texture covers 2 × 2 tiles.
+ */
+export function marbleFloor() {
+  const S = 1024;
+  const tile = S / 2;
+  const grout = 5;
+  const rand = rng(7);
+  const color = document.createElement('canvas');
+  color.width = color.height = S;
+  const c = color.getContext('2d')!;
+  const height = document.createElement('canvas');
+  height.width = height.height = S;
+  const hc = height.getContext('2d')!;
+  const rough = document.createElement('canvas');
+  rough.width = rough.height = S;
+  const rc = rough.getContext('2d')!;
+
+  hc.fillStyle = '#000';
+  hc.fillRect(0, 0, S, S);
+  rc.fillStyle = '#e6e6e6';
+  rc.fillRect(0, 0, S, S);
+  c.fillStyle = '#9d968b';
+  c.fillRect(0, 0, S, S);
+
+  for (let i = 0; i < 2; i++)
+    for (let j = 0; j < 2; j++) {
+      const x = i * tile + grout / 2;
+      const y = j * tile + grout / 2;
+      const s = tile - grout;
+      c.save();
+      c.beginPath();
+      c.rect(x, y, s, s);
+      c.clip();
+      const tone = 232 + Math.floor(rand() * 10);
+      const g = c.createLinearGradient(x, y, x + s, y + s);
+      g.addColorStop(0, `rgb(${tone},${tone - 3},${tone - 8})`);
+      g.addColorStop(1, `rgb(${tone - 8},${tone - 11},${tone - 16})`);
+      c.fillStyle = g;
+      c.fillRect(x, y, s, s);
+      // soft clouds
+      for (let k = 0; k < 40; k++) {
+        c.fillStyle = `rgba(${150 + rand() * 40},${145 + rand() * 40},${140 + rand() * 30},${0.03 + rand() * 0.04})`;
+        c.beginPath();
+        c.arc(x + rand() * s, y + rand() * s, 20 + rand() * 90, 0, Math.PI * 2);
+        c.fill();
+      }
+      // veins
+      for (let v = 0; v < 7; v++) {
+        c.strokeStyle = `rgba(${90 + rand() * 40},${88 + rand() * 40},${85 + rand() * 30},${0.12 + rand() * 0.25})`;
+        c.lineWidth = 0.6 + rand() * 2.2;
+        c.beginPath();
+        let px = x + rand() * s;
+        let py = y - 10;
+        c.moveTo(px, py);
+        while (py < y + s + 10) {
+          const nx = px + (rand() - 0.5) * 90;
+          const ny = py + 30 + rand() * 60;
+          c.quadraticCurveTo(px + (rand() - 0.5) * 60, (py + ny) / 2, nx, ny);
+          px = nx;
+          py = ny;
+        }
+        c.stroke();
+      }
+      c.restore();
+      hc.fillStyle = '#fff';
+      hc.fillRect(x, y, s, s);
+      rc.fillStyle = `rgb(${38 + rand() * 18},0,0)`;
+      rc.fillRect(x, y, s, s);
+    }
+  // Roughness is read from the green channel.
+  const rd = rc.getImageData(0, 0, S, S);
+  for (let i = 0; i < rd.data.length; i += 4) {
+    const v = rd.data[i] + (Math.random() - 0.5) * 6;
+    rd.data[i] = rd.data[i + 1] = rd.data[i + 2] = v;
+  }
+  rc.putImageData(rd, 0, 0);
+  hc.filter = 'blur(1.5px)';
+  hc.drawImage(height, 0, 0);
+  return {
+    map: repeatTex(color, true),
+    normalMap: repeatTex(normalFromHeight(height, 2.2), false),
+    roughnessMap: repeatTex(rough, false),
+  };
+}
+
+/** Oak plank colour + normal maps for store floors. One texture = 8 planks. */
+export function oakFloor(base = '#b98b5e') {
+  const S = 512;
+  const rand = rng(11);
+  const color = document.createElement('canvas');
+  color.width = color.height = S;
+  const c = color.getContext('2d')!;
+  const height = document.createElement('canvas');
+  height.width = height.height = S;
+  const hc = height.getContext('2d')!;
+  hc.fillStyle = '#fff';
+  hc.fillRect(0, 0, S, S);
+  const plank = S / 8;
+  for (let i = 0; i < 8; i++) {
+    const shade = (rand() - 0.5) * 30;
+    c.fillStyle = base;
+    c.fillRect(0, i * plank, S, plank);
+    c.fillStyle = shade > 0 ? `rgba(255,240,220,${shade / 200})` : `rgba(40,20,0,${-shade / 150})`;
+    c.fillRect(0, i * plank, S, plank);
+    for (let k = 0; k < 14; k++) {
+      c.strokeStyle = `rgba(70,40,15,${0.05 + rand() * 0.1})`;
+      c.lineWidth = 1 + rand() * 1.5;
+      c.beginPath();
+      const y0 = i * plank + rand() * plank;
+      c.moveTo(0, y0);
+      c.bezierCurveTo(S * 0.3, y0 + (rand() - 0.5) * 12, S * 0.6, y0 + (rand() - 0.5) * 12, S, y0);
+      c.stroke();
+    }
+    const cut = rand() * S;
+    hc.fillStyle = '#000';
+    hc.fillRect(0, i * plank, S, 2);
+    hc.fillRect(cut, i * plank, 2, plank);
+    c.fillStyle = 'rgba(40,20,5,0.5)';
+    c.fillRect(0, i * plank, S, 1.5);
+    c.fillRect(cut, i * plank, 1.5, plank);
+  }
+  return { map: repeatTex(color, true), normalMap: repeatTex(normalFromHeight(height, 1.5), false) };
+}
+
 export function stepsTexture() {
   const tex = canvasTexture(64, 256, (ctx, w, h) => {
     ctx.fillStyle = '#3a3d44';
@@ -197,14 +365,26 @@ export class AdScreen {
     this.i = start % slides.length;
     this.draw();
   }
+  private extra: AdSlide | null = null;
+  private showExtra = false;
+  /** An event takeover slide shown every other cycle (null to clear). */
+  setExtra(slide: AdSlide | null) {
+    this.extra = slide;
+    this.showExtra = !!slide;
+    this.draw();
+  }
   next() {
-    this.i = (this.i + 1) % this.slides.length;
+    if (this.extra && !this.showExtra) this.showExtra = true;
+    else {
+      this.showExtra = false;
+      this.i = (this.i + 1) % this.slides.length;
+    }
     this.draw();
   }
   private draw() {
     const { ctx } = this;
     const { width: w, height: h } = ctx.canvas;
-    const s = this.slides[this.i];
+    const s = this.showExtra && this.extra ? this.extra : this.slides[this.i];
     const g = ctx.createLinearGradient(0, 0, w, h);
     g.addColorStop(0, s.from);
     g.addColorStop(1, s.to);
@@ -217,7 +397,7 @@ export class AdScreen {
     ctx.fillStyle = '#fff';
     ctx.textBaseline = 'top';
     ctx.font = `700 20px ${FONT}`;
-    ctx.fillText('DEMO PROMOTION', 28, 32);
+    ctx.fillText(this.showExtra && this.extra ? 'EVENT · ON NOW' : 'DEMO PROMOTION', 28, 32);
     wrap(ctx, s.title, 28, 250, w - 56, 50, `800 44px ${FONT}`);
     ctx.globalAlpha = 0.9;
     wrap(ctx, s.sub, 28, 470, w - 56, 32, `600 24px ${FONT}`);

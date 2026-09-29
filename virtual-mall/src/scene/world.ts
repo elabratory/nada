@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import {
   CENTRE,
   FACILITIES,
@@ -8,25 +9,27 @@ import {
   RESTAURANTS,
   STORES,
   money,
+  productSpot,
   type Rect,
   type Store,
 } from '../data/mall';
 import { createProductMesh, mat } from './products3d';
 import {
   AdScreen,
-  floorTexture,
+  type AdSlide,
   kioskTexture,
+  marbleFloor,
+  oakFloor,
   priceTagTexture,
   signTexture,
   skyTexture,
   stepsTexture,
   wayfindingTexture,
-  woodTexture,
   canvasTexture,
 } from './textures';
 import { People } from './people';
 
-export type InteractKind = 'store' | 'product' | 'restaurant' | 'facility' | 'kiosk' | 'ad';
+export type InteractKind = 'store' | 'product' | 'restaurant' | 'facility' | 'kiosk' | 'ad' | 'companion' | 'event';
 export interface Interact {
   kind: InteractKind;
   id: string;
@@ -41,7 +44,33 @@ export interface World {
   update(dt: number, t: number, reducedMotion: boolean): void;
   highlightProduct(id: string | null): void;
   productAnchor(id: string): THREE.Vector3 | undefined;
+  /** Toggle the expensive effects owned by the world (reflections, light shafts, sun shadows). */
+  setQuality(q: Quality): void;
+  /** Size of the planar-reflection buffer, normally half the screen. */
+  setReflectionSize(w: number, h: number): void;
+  /** Simulated time of day (0–24), weather and crowd level (0–1). */
+  setAmbience(a: { hour: number; weather: Weather; crowd: number }): void;
+  /** Lower the shutter, dim the lights and block the door of a closed store. */
+  setStoreOpen(id: string, open: boolean): void;
+  /** Take over the digital ad screens with an event slide (null restores promotions). */
+  setEventSlide(slide: AdSlide | null): void;
+  people: People;
+  stores: {
+    shutters: Map<string, THREE.Mesh>;
+    storeLights: Map<string, THREE.PointLight>;
+    storeLeds: Map<string, { mat: THREE.MeshBasicMaterial; on: THREE.Color }>;
+  };
 }
+
+export type Weather = 'clear' | 'cloudy' | 'rain';
+
+export type Quality = 'high' | 'medium' | 'low';
+
+/** Direction the sunlight travels (down and towards the south-east). */
+const SUN_DIR = new THREE.Vector3(0.42, -1, 0.3).normalize();
+const SHADOW_SIZE: Record<Quality, number> = { high: 4096, medium: 2048, low: 1024 };
+
+let oakCache: ReturnType<typeof oakFloor> | null = null;
 
 const WALL = '#f2eee7';
 const TRIM = '#2b2d33';
@@ -54,13 +83,25 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   scene.fog = new THREE.Fog('#e8edf2', 45, 120);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
+  // Temporary studio environment; replaced at the end by one baked from the mall itself.
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = 0.55;
 
-  scene.add(new THREE.HemisphereLight('#fffaf0', '#8a8f99', 1.5));
-  const sun = new THREE.DirectionalLight('#fff4e0', 1.1);
-  sun.position.set(-20, 40, 10);
-  scene.add(sun);
+  const hemi = new THREE.HemisphereLight('#fff6ea', '#8a8078', 0.8);
+  scene.add(hemi);
+  // Afternoon sun. It only reaches the floor through the skylights, where the
+  // mullions cast crisp striped shadows (the shadow map is rendered once).
+  const sun = new THREE.DirectionalLight('#ffe6c4', 4.2);
+  sun.target.position.set(0, 0, 2);
+  sun.position.copy(sun.target.position).addScaledVector(SUN_DIR, -90);
+  sun.castShadow = true;
+  Object.assign(sun.shadow.camera, { left: -62, right: 62, top: 42, bottom: -42, near: 20, far: 180 });
+  sun.shadow.camera.updateProjectionMatrix();
+  sun.shadow.mapSize.set(SHADOW_SIZE.high, SHADOW_SIZE.high);
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.035;
+  sun.shadow.radius = 2.5;
+  scene.add(sun, sun.target);
 
   const staticRoot = new THREE.Group();
   const dynamicRoot = new THREE.Group();
@@ -120,40 +161,138 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   const wallMat = mat(WALL, 0.85);
   const trimMat = mat(TRIM, 0.5, 0.3);
   const ceilMat = mat('#fbfaf7', 0.95);
-  const lightMat = new THREE.MeshBasicMaterial({ color: '#fffdf5' });
+  // HDR (> 1.0) colours so the bloom pass makes light fittings glow.
+  const lightMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(4.2, 3.9, 3.4) });
+  const skyGlass = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.9, 2.05, 2.25) });
   const skyMat = new THREE.MeshBasicMaterial({ map: skyTexture() });
   const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+  const shutterMat = new THREE.MeshStandardMaterial({
+    map: canvasTexture(64, 256, (ctx, w, h) => {
+      ctx.fillStyle = '#9aa1ab';
+      ctx.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 8) {
+        ctx.fillStyle = '#6b727c';
+        ctx.fillRect(0, y + 6, w, 2);
+        ctx.fillStyle = '#c3c8cf';
+        ctx.fillRect(0, y, w, 1);
+      }
+    }),
+    metalness: 0.6,
+    roughness: 0.45,
+    side: THREE.DoubleSide,
+  });
+  const storeLights = new Map<string, THREE.PointLight>();
+  const storeLeds = new Map<string, { mat: THREE.MeshBasicMaterial; on: THREE.Color }>();
+  const shutters = new Map<string, THREE.Mesh>();
+  const doorBlocks = new Map<string, Rect>();
+  const liftTickers: (() => void)[] = [];
+  let liftTimer = 0;
 
   // ---------- floor ----------
+  // Polished marble (1.2 m tiles) with a real-time planar reflection mixed
+  // into the standard PBR shader, softened and broken up by the grout.
   const b = CENTRE.bounds;
-  const ft = floorTexture();
-  ft.repeat.set((b.x2 - b.x1) / 4, (b.z2 - b.z1) / 4);
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(b.x2 - b.x1, b.z2 - b.z1),
-    new THREE.MeshStandardMaterial({ map: ft, roughness: 0.28, metalness: 0.05 }),
-  );
+  const marble = marbleFloor();
+  for (const t of [marble.map, marble.normalMap, marble.roughnessMap]) t.repeat.set((b.x2 - b.x1) / 2.4, (b.z2 - b.z1) / 2.4);
+  const floorGeo = new THREE.PlaneGeometry(b.x2 - b.x1, b.z2 - b.z1);
+  const floorMat = new THREE.MeshStandardMaterial({
+    map: marble.map,
+    normalMap: marble.normalMap,
+    normalScale: new THREE.Vector2(0.8, 0.8),
+    roughnessMap: marble.roughnessMap,
+    roughness: 1,
+    metalness: 0,
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set((b.x1 + b.x2) / 2, 0, (b.z1 + b.z2) / 2);
   scene.add(floor);
 
+  const reflector = new Reflector(floorGeo, { textureWidth: 1024, textureHeight: 512, clipBias: 0.003, multisample: 0 });
+  reflector.rotation.copy(floor.rotation);
+  reflector.position.copy(floor.position);
+  const reflectorMat = reflector.material as THREE.ShaderMaterial;
+  reflectorMat.colorWrite = false;
+  reflectorMat.depthWrite = false;
+  reflector.raycast = () => {};
+  // Render the reflection at most once per frame (AO and other passes also draw the scene).
+  let reflectedThisFrame = false;
+  const renderReflection = reflector.onBeforeRender.bind(reflector);
+  reflector.onBeforeRender = (...args: Parameters<THREE.Object3D['onBeforeRender']>) => {
+    if (reflectedThisFrame) return;
+    reflectedThisFrame = true;
+    renderReflection(...args);
+  };
+  reflector.visible = false;
+  scene.add(reflector);
+  const reflUniforms = {
+    tReflect: { value: reflector.getRenderTarget().texture },
+    textureMatrix: reflectorMat.uniforms.textureMatrix,
+    reflStrength: { value: 0 },
+  };
+  floorMat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, reflUniforms);
+    sh.vertexShader =
+      'uniform mat4 textureMatrix;\nvarying vec4 vReflUv;\n' +
+      sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vReflUv = textureMatrix * vec4(position, 1.0);');
+    sh.fragmentShader =
+      'uniform sampler2D tReflect;\nuniform float reflStrength;\nvarying vec4 vReflUv;\n' +
+      sh.fragmentShader.replace(
+        '#include <opaque_fragment>',
+        `if (reflStrength > 0.0) {
+          vec4 ruv = vReflUv;
+          #ifdef USE_NORMALMAP_TANGENTSPACE
+            ruv.xy += mapN.xy * 0.025 * ruv.w;
+          #endif
+          vec2 ruv2 = ruv.xy / ruv.w;
+          vec2 px = vec2(0.0018, 0.0026);
+          vec3 rc = texture2D(tReflect, ruv2).rgb * 0.36
+            + texture2D(tReflect, ruv2 + px).rgb * 0.16 + texture2D(tReflect, ruv2 - px).rgb * 0.16
+            + texture2D(tReflect, ruv2 + vec2(px.x, -px.y)).rgb * 0.16 + texture2D(tReflect, ruv2 + vec2(-px.x, px.y)).rgb * 0.16;
+          float gloss = 1.0 - clamp((roughnessFactor - 0.12) * 2.2, 0.0, 1.0);
+          float fres = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0);
+          float k = reflStrength * gloss * mix(0.45, 1.0, fres);
+          outgoingLight = outgoingLight * (1.0 - 0.5 * k) + rc * k;
+        }
+        #include <opaque_fragment>`,
+      );
+  };
+
   // ---------- concourse ceiling, skylights & lights ----------
   const at = { x1: -8, z1: -5, x2: 8, z2: 5 }; // atrium void in the ceiling
-  const ceil = (x1: number, z1: number, x2: number, z2: number, y: number) => {
+  const ceil = (x1: number, z1: number, x2: number, z2: number, y = H) => {
     const m = plane(x2 - x1, z2 - z1, ceilMat, [(x1 + x2) / 2, y, (z1 + z2) / 2]);
     m.rotation.x = Math.PI / 2;
   };
-  ceil(-48, -7, at.x1, 7, H);
-  ceil(at.x2, -7, 48, 7, H);
-  ceil(at.x1, -7, at.x2, at.z1, H);
-  ceil(at.x1, at.z2, at.x2, 7, H);
-  for (const [x1, x2] of [
-    [-46, -10],
-    [10, 46],
-  ]) {
-    const sky = plane(x2 - x1, 3, new THREE.MeshBasicMaterial({ color: '#eaf6ff' }), [(x1 + x2) / 2, H - 0.02, 0]);
-    sky.rotation.x = Math.PI / 2;
-    for (let x = x1; x <= x2; x += 4) slab(x - 0.06, -1.5, x + 0.06, 1.5, H - 0.25, H - 0.02, trimMat);
-  }
+  /** Ceiling rectangle with a rectangular opening cut out of it. */
+  const ceilWithHole = (o: Rect, hole: Rect, y = H) => {
+    ceil(o.x1, o.z1, o.x2, hole.z1, y);
+    ceil(o.x1, hole.z2, o.x2, o.z2, y);
+    ceil(o.x1, hole.z1, hole.x1, hole.z2, y);
+    ceil(hole.x2, hole.z1, o.x2, hole.z2, y);
+  };
+  const skylights: { r: Rect; top: number; grid: number }[] = [];
+  /** Raised glass lantern over an opening, with mullions that cast sun stripes. */
+  const skylight = (r: Rect, base = H, rise = 1.2, grid = 2) => {
+    const top = base + rise;
+    slab(r.x1 - 0.15, r.z1 - 0.15, r.x2 + 0.15, r.z1, base, top, ceilMat);
+    slab(r.x1 - 0.15, r.z2, r.x2 + 0.15, r.z2 + 0.15, base, top, ceilMat);
+    slab(r.x1 - 0.15, r.z1, r.x1, r.z2, base, top, ceilMat);
+    slab(r.x2, r.z1, r.x2 + 0.15, r.z2, base, top, ceilMat);
+    const roof = plane(r.x2 - r.x1, r.z2 - r.z1, skyGlass, [(r.x1 + r.x2) / 2, top, (r.z1 + r.z2) / 2]);
+    roof.rotation.x = Math.PI / 2;
+    for (let x = r.x1 + grid; x < r.x2 - 0.3; x += grid) slab(x - 0.06, r.z1, x + 0.06, r.z2, top - 0.3, top - 0.02, trimMat);
+    for (let z = r.z1 + grid; z < r.z2 - 0.3; z += grid) slab(r.x1, z - 0.06, r.x2, z + 0.06, top - 0.3, top - 0.02, trimMat);
+    skylights.push({ r, top, grid });
+  };
+  const westSky = { x1: -46, z1: -1.5, x2: -10, z2: 1.5 };
+  const eastSky = { x1: 10, z1: -1.5, x2: 46, z2: 1.5 };
+  ceilWithHole({ x1: -48, z1: -7, x2: at.x1, z2: 7 }, westSky);
+  ceilWithHole({ x1: at.x2, z1: -7, x2: 48, z2: 7 }, eastSky);
+  skylight(westSky, H, 1.2, 1.5);
+  skylight(eastSky, H, 1.2, 1.5);
+  ceil(at.x1, -7, at.x2, at.z1);
+  ceil(at.x1, at.z2, at.x2, 7);
   const discGeo = new THREE.CircleGeometry(0.35, 20);
   for (let x = -44; x <= 44; x += 6) {
     if (Math.abs(x) < 9) continue;
@@ -172,12 +311,13 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   }
 
   // ---------- atrium void, level-2 edge & escalators ----------
-  const voidMat = new THREE.MeshStandardMaterial({ color: '#f6f3ee', roughness: 0.9, side: THREE.BackSide });
-  const voidBox = new THREE.Mesh(new THREE.BoxGeometry(at.x2 - at.x1, 6, at.z2 - at.z1), voidMat);
-  voidBox.position.set(0, H + 3, 0);
-  dynamicRoot.add(voidBox);
-  const topSky = plane(14, 8, new THREE.MeshBasicMaterial({ color: '#eaf6ff' }), [0, H + 5.95, 0]);
-  topSky.rotation.x = Math.PI / 2;
+  // Double-height void above the atrium, open to a big glass roof.
+  const voidMat = mat('#f4f0ea', 0.9);
+  slab(at.x1 - 0.3, at.z1 - 0.3, at.x2 + 0.3, at.z1, H, H + 6, voidMat);
+  slab(at.x1 - 0.3, at.z2, at.x2 + 0.3, at.z2 + 0.3, H, H + 6, voidMat);
+  slab(at.x1 - 0.3, at.z1, at.x1, at.z2, H, H + 6, voidMat);
+  slab(at.x2, at.z1, at.x2 + 0.3, at.z2, H, H + 6, voidMat);
+  skylight({ x1: at.x1, z1: at.z1, x2: at.x2, z2: at.z2 }, H + 6, 0.6, 2);
   // Level-2 slab edge and glass balustrade ring.
   slab(at.x1, at.z1 - 0.01, at.x2, at.z1 + 0.35, H - 0.45, H + 0.05, mat('#ffffff', 0.4));
   slab(at.x1, at.z2 - 0.35, at.x2, at.z2 + 0.01, H - 0.45, H + 0.05, mat('#ffffff', 0.4));
@@ -281,7 +421,7 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     ads.push(ad);
     const face = z < 0 ? z + 0.03 : z - 0.03;
     slab(x - 1.25, z < 0 ? z : z - 0.12, x + 1.25, z < 0 ? z + 0.12 : z, 0.5, 4.3, mat('#15171c', 0.4));
-    const scr = plane(2.2, 3.6, new THREE.MeshBasicMaterial({ map: ad.texture }), [x, 2.4, face + (z < 0 ? 0.1 : -0.1)], z < 0 ? 0 : Math.PI, dynamicRoot);
+    const scr = plane(2.2, 3.6, new THREE.MeshBasicMaterial({ map: ad.texture, color: new THREE.Color(1.5, 1.5, 1.5) }), [x, 2.4, face + (z < 0 ? 0.1 : -0.1)], z < 0 ? 0 : Math.PI, dynamicRoot);
     tag(scr, { kind: 'ad', id: 'deals', label: 'Digital advertising screen — view deals' });
   });
 
@@ -329,11 +469,15 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     const c = plane(w, d, mat('#ffffff', 0.9), [cx, SH, cz]);
     c.rotation.x = Math.PI / 2;
     // Store floor finish
-    const fin = s.categories.includes('Fashion') || s.categories.includes('Beauty') ? woodTexture('#c8a27a') : null;
-    if (fin) fin.repeat.set(w / 4, d / 4);
-    const floorMat = fin
-      ? new THREE.MeshStandardMaterial({ map: fin, roughness: 0.5 })
-      : mat(s.id === 'volt' ? '#2b2d33' : '#d9dde2', 0.4);
+    let floorMat: THREE.Material;
+    if (s.categories.includes('Fashion') || s.categories.includes('Beauty')) {
+      if (!oakCache) {
+        oakCache = oakFloor('#c29a70');
+        oakCache.map.repeat.set(w / 4, d / 4);
+        oakCache.normalMap.repeat.set(w / 4, d / 4);
+      }
+      floorMat = new THREE.MeshStandardMaterial({ map: oakCache.map, normalMap: oakCache.normalMap, roughness: 0.38 });
+    } else floorMat = mat(s.id === 'volt' ? '#26282e' : '#d9dde2', s.id === 'volt' ? 0.25 : 0.3);
     const f = plane(w, d, floorMat, [cx, 0.005, cz]);
     f.rotation.x = -Math.PI / 2;
     for (let x = r.x1 + 3; x < r.x2 - 1; x += 5) {
@@ -345,6 +489,7 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     const pl = new THREE.PointLight('#fff1dc', 25, 16, 1.5);
     pl.position.set(cx, SH - 0.6, cz);
     scene.add(pl);
+    storeLights.set(s.id, pl);
 
     // Glass frontage with a 5 m open doorway.
     const dz = zf + (north ? -0.1 : 0.1);
@@ -377,6 +522,19 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
       tag(bp, store);
     }
     slab(r.x1 + 0.55, zf - 0.05, r.x1 + 0.65, zf + 0.05, 3.35, 4.8, trimMat);
+    // Glowing LED strip under the fascia in the brand colour (picked up by bloom).
+    const ledCol = new THREE.Color(stripeColor(s.color, s.accent)).multiplyScalar(3.2);
+    const led = new THREE.MeshBasicMaterial({ color: ledCol });
+    const fz = dz + (north ? 0.26 : -0.26);
+    slab(r.x1 + 0.2, fz - 0.03, r.x2 - 0.2, fz + 0.03, 3.36, 3.43, led);
+    storeLeds.set(s.id, { mat: led, on: ledCol.clone() });
+    // Roller shutter across the doorway, lowered when the store is closed.
+    const shutter = new THREE.Mesh(new THREE.PlaneGeometry(5, 3.4), shutterMat);
+    shutter.position.set(s.doorX, 1.7, dz);
+    if (!north) shutter.rotation.y = Math.PI;
+    shutter.visible = false;
+    dynamicRoot.add(shutter);
+    shutters.set(s.id, shutter);
 
     // Feature wall inside with the store name.
     const featureZ = zb - inward * 0.02 + (north ? 0 : 0);
@@ -418,17 +576,8 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     slab(cxCounter - 1.45, zb - inward * 2.15, cxCounter + 1.45, zb - inward * 3.25, 1.05, 1.12, mat('#ffffff', 0.3));
 
     // Hero products on pedestals (these are the clickable ones).
-    const slots: [number, number][] = [
-      [-4.2, 4.5],
-      [4.2, 4.5],
-      [-3.4, 8.2],
-      [3.4, 8.2],
-      [0, 9.2],
-    ];
-    s.products.forEach((p, i) => {
-      const [ox, depth] = slots[i % slots.length];
-      const x = s.doorX + ox;
-      const z = zf + inward * depth;
+    s.products.forEach((p) => {
+      const { x, z } = productSpot(p);
       const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.58, 1.0, 28), mat('#ffffff', 0.25));
       ped.position.set(x, 0.5, z);
       dynamicRoot.add(ped);
@@ -476,7 +625,33 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     const doorMat = isLift ? mat('#b8bec8', 0.25, 0.8) : mat('#5c677d', 0.6);
     const door = plane(isLift ? 2.4 : 1.6, 2.4, doorMat, [f.x, 1.2, am.z1 + 0.02], 0, dynamicRoot);
     tag(door, { kind: 'facility', id: f.id, label: f.name });
-    if (isLift) slab(f.x - 0.02, am.z1 + 0.01, f.x + 0.02, am.z1 + 0.04, 0, 2.4, trimMat);
+    if (isLift) {
+      slab(f.x - 0.02, am.z1 + 0.01, f.x + 0.02, am.z1 + 0.04, 0, 2.4, trimMat);
+      // Floor indicator that cycles as the lift travels between G and P1–P3.
+      const c = document.createElement('canvas');
+      c.width = 160;
+      c.height = 64;
+      const lctx = c.getContext('2d')!;
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const floors = ['G', 'P1', 'P2', 'P3', 'P2', 'P1'];
+      let k = 0;
+      const drawLift = () => {
+        const up = k < 3;
+        lctx.fillStyle = '#050608';
+        lctx.fillRect(0, 0, 160, 64);
+        lctx.fillStyle = '#ff9f1c';
+        lctx.font = '800 40px ui-monospace, monospace';
+        lctx.fillText(`${up ? '▲' : '▼'} ${floors[k]}`, 16, 46);
+        tex.needsUpdate = true;
+      };
+      drawLift();
+      liftTickers.push(() => {
+        k = (k + 1) % floors.length;
+        drawLift();
+      });
+      plane(0.6, 0.24, new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(1.6, 1.6, 1.6) }), [f.x, 2.5, am.z1 + 0.03], 0, dynamicRoot);
+    }
     const glyph = f.kind === 'restroom' ? 'WC' : f.kind === 'baby' ? '♡' : '⇅';
     const s = plane(2.6, 0.65, new THREE.MeshBasicMaterial({ map: wayfindingTexture(glyph, f.kind === 'lift' ? 'Lifts · P1–P3' : f.name, f.kind === 'lift' ? '#2563eb' : '#0f766e') }), [f.x, 2.95, am.z1 + 0.03], 0, dynamicRoot);
     tag(s, { kind: 'facility', id: f.id, label: f.name });
@@ -484,6 +659,37 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   const amSign = plane(4.2, 1.05, new THREE.MeshBasicMaterial({ map: wayfindingTexture('WC', 'Restrooms · Lifts', '#0f766e') }), [0, 4.1, am.z2 + 0.03 - 0.4 - 0.02], 0, dynamicRoot);
   amSign.position.z = -7.43 + 0.45;
   tag(amSign, { kind: 'facility', id: 'restrooms', label: 'Restrooms' });
+
+  // ---------- security desk & CCTV ----------
+  const secDesk = slab(-46.5, -6.95, -44.5, -6.15, 0, 1.1, mat('#1f2a44', 0.4), { collide: true });
+  dynamicRoot.attach(secDesk);
+  tag(secDesk, { kind: 'facility', id: 'security', label: 'Security & First Aid' });
+  slab(-46.55, -7.0, -44.45, -6.1, 1.1, 1.15, mat('#e5e7eb', 0.3));
+  // Monitors on the desk.
+  for (const x of [-46.1, -45.5]) {
+    slab(x - 0.22, -6.9, x + 0.22, -6.86, 1.15, 1.45, mat('#0b0d12', 0.3));
+    plane(0.4, 0.26, new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 0.55, 0.7) }), [x, 1.3, -6.85], 0, dynamicRoot);
+  }
+  const secSign = plane(2.6, 0.65, new THREE.MeshBasicMaterial({ map: wayfindingTexture('+', 'Security & First Aid', '#b91c1c') }), [-45.5, 2.7, -6.98], 0, dynamicRoot);
+  tag(secSign, { kind: 'facility', id: 'security', label: 'Security & First Aid' });
+  // Ceiling CCTV domes along the concourse and in the food court.
+  const camBody = mat('#f5f5f5', 0.3);
+  const camLens = new THREE.MeshStandardMaterial({ color: '#0a0a0a', roughness: 0.05, metalness: 0.5 });
+  for (const [x, z, y] of [
+    [-38, -6.2, H],
+    [-18, 6.2, H],
+    [-4, -6.2, H],
+    [18, -6.2, H],
+    [38, 6.2, H],
+    [26, 20, H],
+    [-45, -6.5, 4.6],
+  ] as const) {
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), camLens);
+    dome.position.set(x, y - 0.02, z);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16), camBody);
+    collar.position.set(x, y - 0.03, z);
+    staticRoot.add(dome, collar);
+  }
 
   // ---------- information desk ----------
   const desk = slab(-10.5, -6.4, -7.5, -4.6, 0, 1.1, mat('#ffffff', 0.3), { collide: true });
@@ -518,8 +724,9 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   slab(fc.x1, fc.z2, fc.x2, fc.z2 + 0.3, 0, H, wallMat, { collide: true });
   slab(fc.x2, fc.z1, fc.x2 + 0.3, fc.z2, 0, H, wallMat, { collide: true });
   slab(fc.x1 - 0.3, fc.z1, fc.x1, fc.z2, 0, H, wallMat, { collide: true });
-  const fcc = plane(fc.x2 - fc.x1, fc.z2 - fc.z1, ceilMat, [(fc.x1 + fc.x2) / 2, H, (fc.z1 + fc.z2) / 2]);
-  fcc.rotation.x = Math.PI / 2;
+  const fcSky = { x1: 10, z1: 12.5, x2: 42, z2: 16.5 };
+  ceilWithHole(fc, fcSky);
+  skylight(fcSky, H, 1.2, 2);
   const fcFloor = plane(fc.x2 - fc.x1, fc.z2 - fc.z1, mat('#d6cbb8', 0.45), [(fc.x1 + fc.x2) / 2, 0.004, (fc.z1 + fc.z2) / 2]);
   fcFloor.rotation.x = -Math.PI / 2;
   for (const x of [17, 26, 35]) {
@@ -641,7 +848,7 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     for (const side of [-1, 1]) {
       const ad = new AdScreen(adSlides, start + (side > 0 ? 1 : 0));
       ads.push(ad);
-      const scr = plane(1.7, 2.84, new THREE.MeshBasicMaterial({ map: ad.texture }), [x + side * 0.21, 1.9, 0], side * Math.PI / 2, dynamicRoot);
+      const scr = plane(1.7, 2.84, new THREE.MeshBasicMaterial({ map: ad.texture, color: new THREE.Color(1.5, 1.5, 1.5) }), [x + side * 0.21, 1.9, 0], side * Math.PI / 2, dynamicRoot);
       tag(scr, { kind: 'ad', id: 'deals', label: 'Digital advertising screen — view deals' });
     }
   }
@@ -657,11 +864,142 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   const people = new People();
   scene.add(people.group);
 
+  // ---------- volumetric-looking light shafts under the skylights ----------
+  const shaftMat = new THREE.ShaderMaterial({
+    uniforms: { uColor: { value: new THREE.Color('#ffe9c8') }, uOpacity: { value: 0.07 } },
+    vertexShader: `attribute float aH; varying float vH;
+      void main() { vH = aH; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vH;
+      void main() { float a = smoothstep(0.0, 0.45, vH) * smoothstep(1.0, 0.8, vH); gl_FragColor = vec4(uColor * a * uOpacity, 1.0); }`,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const shafts = new THREE.Mesh(new THREE.BufferGeometry(), shaftMat);
+  shafts.raycast = () => {};
+  shafts.frustumCulled = false;
+  scene.add(shafts);
+  const sunDir = SUN_DIR.clone();
+  function rebuildShafts() {
+    const pos: number[] = [];
+    const hAttr: number[] = [];
+    const k = 1 / Math.max(0.25, -sunDir.y);
+    for (const { r, top, grid } of skylights) {
+      const off = { x: sunDir.x * top * k, z: sunDir.z * top * k };
+      for (let x = r.x1; x < r.x2 - 0.1; x += grid)
+        for (let z = r.z1; z < r.z2 - 0.1; z += grid) {
+          const x1 = x + 0.1;
+          const x2 = Math.min(x + grid, r.x2) - 0.1;
+          const z1 = z + 0.1;
+          const z2 = Math.min(z + grid, r.z2) - 0.1;
+          const T = [
+            [x1, z1],
+            [x2, z1],
+            [x2, z2],
+            [x1, z2],
+          ];
+          for (let i = 0; i < 4; i++) {
+            const [ax, az] = T[i];
+            const [bx, bz] = T[(i + 1) % 4];
+            // quad: top a, top b, bottom b, bottom a
+            const quad = [
+              [ax, top, az, 1],
+              [bx, top, bz, 1],
+              [bx + off.x, 0, bz + off.z, 0],
+              [ax + off.x, 0, az + off.z, 0],
+            ];
+            for (const idx of [0, 1, 2, 0, 2, 3]) {
+              const q = quad[idx];
+              pos.push(q[0], q[1], q[2]);
+              hAttr.push(q[3]);
+            }
+          }
+        }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aH', new THREE.Float32BufferAttribute(hAttr, 1));
+    shafts.geometry.dispose();
+    shafts.geometry = g;
+  }
+  rebuildShafts();
+
+  // ---------- rain seen through the entrance glass ----------
+  const rain = new THREE.Group();
+  const rainTex = canvasTexture(128, 512, (ctx, w, h) => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(220,230,245,0.55)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 90; i++) {
+      const x = (i * 53) % w;
+      const y = (i * 97) % h;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 3, y + 26);
+      ctx.stroke();
+    }
+  });
+  rainTex.wrapS = rainTex.wrapT = THREE.RepeatWrapping;
+  rainTex.repeat.set(6, 2);
+  const rainMat = new THREE.MeshBasicMaterial({ map: rainTex, transparent: true, depthWrite: false });
+  for (const [x, z, ry] of [
+    [-50.5, 0, Math.PI / 2],
+    [50.5, 0, -Math.PI / 2],
+    [0, 22, Math.PI],
+  ] as const) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(14, 8), rainMat);
+    p.position.set(x, 4, z);
+    p.rotation.y = ry;
+    p.raycast = () => {};
+    rain.add(p);
+  }
+  rain.visible = false;
+  scene.add(rain);
+
   // ---------- merge static geometry into a few draw calls ----------
   mergeStatic(staticRoot);
 
+  // Shadows: everything solid casts and receives; glass, glows, screens and
+  // helpers don't cast. The sun never moves between frames, so the shadow map
+  // is only re-rendered when the time of day or quality changes.
+  scene.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const material = m.material as THREE.Material;
+    m.receiveShadow = true;
+    m.castShadow =
+      !(material as THREE.MeshBasicMaterial).isMeshBasicMaterial &&
+      !(material as THREE.ShaderMaterial).isShaderMaterial &&
+      !material.transparent &&
+      material.visible !== false;
+  });
+  people.group.traverse((o) => (o.castShadow = false));
+  floor.castShadow = false;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+
+  // Bake an environment map from the finished mall so every glossy surface
+  // (glass, metal, marble) reflects the real surroundings.
+  scene.environment = pmrem.fromScene(scene, 0.03, 0.1, 160, { position: new THREE.Vector3(-18, 3.2, 0), size: 256 }).texture;
+  scene.environmentIntensity = 0.9;
+  renderer.shadowMap.needsUpdate = true;
+
   // Pickables: interactables plus the merged static meshes as occluders.
   const pickables: THREE.Object3D[] = [...interactables, ...staticRoot.children, floor];
+
+  // ---------- time of day, weather and crowds ----------
+  const skyGlassBase = skyGlass.color.clone();
+  let quality: Quality = 'high';
+  let sunFactor = 1;
+  function applySun() {
+    sun.castShadow = quality !== 'low';
+    // Without shadows the sun would light every surface indoors, so it is dimmed.
+    sun.intensity = (quality === 'low' ? 1.0 : 4.2) * sunFactor;
+    shafts.visible = quality === 'high' && sunFactor > 0.25;
+    shaftMat.uniforms.uOpacity.value = 0.07 * Math.min(1, sunFactor);
+    renderer.shadowMap.needsUpdate = true;
+  }
 
   let adTimer = 0;
   let highlighted: string | null = null;
@@ -669,8 +1007,81 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     scene,
     colliders,
     pickables,
+    people,
+    stores: { shutters, storeLights, storeLeds },
+    setQuality(q) {
+      quality = q;
+      reflector.visible = q === 'high';
+      reflUniforms.reflStrength.value = q === 'high' ? 0.34 : 0;
+      const size = SHADOW_SIZE[q];
+      if (sun.shadow.mapSize.x !== size) {
+        sun.shadow.map?.dispose();
+        (sun.shadow as { map: THREE.WebGLRenderTarget | null }).map = null;
+        sun.shadow.mapSize.set(size, size);
+      }
+      applySun();
+    },
+    setReflectionSize(w, h) {
+      reflector.getRenderTarget().setSize(Math.max(64, Math.round(w)), Math.max(64, Math.round(h)));
+    },
+    setAmbience({ hour, weather, crowd }) {
+      // Sun arcs from east (morning) to west (evening).
+      const dayT = THREE.MathUtils.clamp((hour - 6) / 13, 0, 1);
+      const elev = Math.sin(dayT * Math.PI);
+      const daylight = THREE.MathUtils.smoothstep(elev, 0.02, 0.35);
+      const cloud = weather === 'clear' ? 1 : weather === 'cloudy' ? 0.3 : 0.12;
+      sunDir.set(-Math.cos(dayT * Math.PI) * 0.9, -Math.max(0.3, elev), 0.32).normalize();
+      sun.position.copy(sun.target.position).addScaledVector(sunDir, -90);
+      const warm = 1 - THREE.MathUtils.smoothstep(elev, 0.15, 0.6);
+      sun.color.setRGB(1, 0.92 - warm * 0.2, 0.8 - warm * 0.35);
+      sunFactor = daylight * cloud;
+      rebuildShafts();
+      applySun();
+      const skyK = 0.12 + daylight * (weather === 'clear' ? 1 : weather === 'cloudy' ? 0.65 : 0.45);
+      skyGlass.color.copy(skyGlassBase).multiplyScalar(skyK);
+      if (daylight < 0.3) skyGlass.color.lerp(new THREE.Color(0.05, 0.08, 0.2), 1 - daylight / 0.3);
+      skyMat.color.setScalar(0.25 + 0.75 * skyK);
+      if (weather !== 'clear') skyMat.color.multiply(new THREE.Color(0.8, 0.85, 0.9));
+      // Night: daylight fades and the centre runs on its own (warmer) lighting.
+      hemi.intensity = 0.22 + 0.45 * daylight;
+      hemi.color.setRGB(1, 0.93 + 0.04 * daylight, 0.82 + 0.1 * daylight);
+      scene.environmentIntensity = 0.3 + 0.38 * daylight;
+      scene.fog!.color.setRGB(0.5 + 0.41 * daylight, 0.5 + 0.43 * daylight, 0.55 + 0.4 * daylight);
+      rain.visible = weather === 'rain';
+      people.setCrowd(crowd);
+    },
+    setEventSlide(slide) {
+      ads.forEach((a) => a.setExtra(slide));
+    },
+    setStoreOpen(id, open) {
+      const sh = shutters.get(id);
+      if (sh) sh.visible = !open;
+      const pl = storeLights.get(id);
+      if (pl) pl.intensity = open ? 25 : 3;
+      const led = storeLeds.get(id);
+      if (led) led.mat.color.copy(led.on).multiplyScalar(open ? 1 : 0.08);
+      const s = STORES.find((x) => x.id === id)!;
+      const zf = s.side === 'north' ? s.rect.z2 : s.rect.z1;
+      if (!open && !doorBlocks.has(id)) {
+        const r = { x1: s.doorX - 2.5, z1: zf - 0.25, x2: s.doorX + 2.5, z2: zf + 0.25 };
+        doorBlocks.set(id, r);
+        colliders.push(r);
+      } else if (open && doorBlocks.has(id)) {
+        const r = doorBlocks.get(id)!;
+        colliders.splice(colliders.indexOf(r), 1);
+        doorBlocks.delete(id);
+      }
+    },
     update(dt, t, reducedMotion) {
+      reflectedThisFrame = false;
       if (!reducedMotion) {
+        rainTex.offset.y += dt * 1.6;
+        st.offset.y -= dt * 0.35; // escalator steps moving
+        liftTimer += dt;
+        if (liftTimer > 2.5) {
+          liftTimer = 0;
+          liftTickers.forEach((f) => f());
+        }
         for (const s of spinners) s.rotation.y += dt * 0.35;
         adTimer += dt;
         if (adTimer > 5) {
@@ -694,6 +1105,16 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
       return m ? m.position.clone() : undefined;
     },
   };
+}
+
+/** Brand colour for glows and stripes; swaps to the accent when the brand colour is near-black or near-white. */
+export function stripeColor(color: string, accent: string) {
+  const lum = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  };
+  const pick = lum(color) > 215 || lum(color) < 40 ? accent : color;
+  return lum(pick) < 40 ? '#dfe7ff' : pick;
 }
 
 function menuBoard(title: string, lines: string[]) {

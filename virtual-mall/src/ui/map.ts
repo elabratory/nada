@@ -20,6 +20,7 @@ const FACILITY_GLYPH: Record<string, [string, string]> = {
   entrance: ['⇄', '#1d4ed8'],
   parking: ['P', '#1d4ed8'],
   info: ['i', '#1d4ed8'],
+  security: ['+', '#b91c1c'],
 };
 
 function s<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}, text?: string) {

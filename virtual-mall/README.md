@@ -1,106 +1,131 @@
 # Virtual Mall
 
-**Step Inside Your Shopping Centre.** A browser-based, lightweight virtual shopping centre.
+**An AI shopping centre you can actually explore.** Walk a 3D shopping centre in your browser, on a computer or a phone, with no headset needed. Scout, your AI shopping companion, finds products, compares them, keeps you on budget and walks you to them. Every feature serves one loop:
 
-Visitors can:
-- walk around a 3D centre on desktop or phone (no VR headset needed)
-- look around 360°
-- enter shops and click products to see prices, sizes and stock
-- search for stores or products
-- follow turn-by-turn directions
-- check opening hours, food, bathrooms and parking
+**DISCOVER → COMPARE → PLAN → SHOP**
 
-This folder is a working **MVP prototype**. It shows one fictional centre, *Harbour Central*: one floor, six stores and a four-outlet food court.
+This folder is a working prototype of a fictional one-floor centre, *Harbour Central*. It has:
+- 6 stores and 36 products
+- a 4-outlet food court
+- security, facilities, events, and simulated opening hours, crowds and weather
 
-> All store names, products, prices, menus and promotions are **fictional demo content**. Each store stands in for a kind of retailer: Stride Athletics for Nike, Orchard Tech for Apple, Thread & Co for H&M, Lumière Beauty for Sephora, Sneaker Vault for Foot Locker, Volt Hi-Fi for JB Hi-Fi, and Burger House for McDonald's. No real logos, interiors or trademarks are used.
+> Everything is **fictional demo data**. Each store stands in for a kind of retailer: Stride Athletics for Nike, Orchard Tech for Apple, Thread & Co for H&M, Lumière Beauty for Sephora, Sneaker Vault for Foot Locker, Volt Hi-Fi for JB Hi-Fi, and Burger House for McDonald's. No real logos, prices or stock are used. The UI labels demo and simulated data everywhere.
 
 ## Run it
-
-Requirements: Node.js 20+.
 
 ```bash
 cd virtual-mall
 npm install
-npm run dev        # http://localhost:5173 (also reachable from your phone on the same Wi-Fi)
-npm run build      # type-checks and builds a static site into dist/
-npm run preview    # serve the production build
+npm run dev            # http://localhost:5173 (use --host to open it on your phone)
+npm test               # companion, budget, mission and data-validation tests
+npm run build          # type-check + static build in dist/
+npm run export:centre  # export the demo centre in the digital-twin JSON format
 ```
 
-`dist/` is a plain static site with relative paths. You can upload it to Netlify, Vercel, GitHub Pages, S3/CloudFront or any web server.
+## What you can do
+
+### Discover: Scout, the AI shopping companion
+A glowing companion follows you through the centre. Click it, press **C**, choose **Ask Scout**, or ask from the landing page. Try:
+
+- "I need running shoes under $150"
+- "I need an outfit for a $200 budget"
+- "I'm looking for a birthday gift for my brother". Scout suggests well-rated gifts and asks what the person is into. It never guesses from who the gift is for.
+- "I want a black hoodie" · "I need a phone for under $800"
+- "Just looking". This is discovery mode, based only on your budget, the categories you pick, items you viewed here, promotions and the current event.
+- "compare them", "find something cheaper", "add the best one", "where are the toilets?", "what's on?"
+
+Scout **only uses products that exist in the centre's catalogue**; `npm test` checks this. For each result it shows:
+- the price and demo rating
+- stock
+- which store, and how far away
+- *Add*, *View*, *Compare* and *Go* buttons
+
+Voice input works in browsers that support speech recognition. An optional LLM brain can be plugged in behind your own proxy; answers are still validated against the catalogue (`src/ai/llm-brain.ts`).
+
+### Compare
+- Add up to 3 products to the comparison tray.
+- **Comparison table**: price, rating, features (with the ones only one product has highlighted), colour, availability, store and distance, price difference, plus a written summary.
+- **Side by side in 3D**: holographic plinths appear in front of you, showing price, rating, stock and *Cheapest*, *Best rated* and *Best value* badges.
+
+### Plan
+- **Shopping missions**. For example, "Buy: running shoes, black hoodie, birthday gift. Budget $300". Scout picks the best combination within budget and orders the stores into the **shortest walk** (exact search). It shows walking time, total cost, stores visited, and any items it couldn't find.
+- **Shop before you go**. Plan a real visit from home: day, arrival time, car, bus or on foot, food break, and restroom or parents'-room stops. You get a timed **Your Shopping Plan** (for example "10:00 — Arrive … 10:05 — Stride Athletics …"). It warns you about stores that will be closed, and you can save it, copy it, or walk it in 3D.
+
+### Shop
+- **Live cart** that persists on this device: product, store, price, quantity, estimated total.
+- **Smart budget**: a budget meter in the HUD. If an item would take you over, Scout says by how much and offers cheaper similar items from the centre, or lets you add it anyway.
+- **Modes**:
+  - *Explore*: just walk around.
+  - *Shopping*: cart and budget stay with you.
+  - *Personal Shopper*: Scout guides you proactively. For example: "You're 20 metres from Sneaker Vault", "The shoes you wanted are available here", "After this store, your next stop is Thread & Co".
+
+### A living mall (simulated)
+- **Time of day and day/night cycle**: the sun moves through the skylights, and evenings are lit by the centre's own lights. Choose *Live now* or preview any time; fast-forward is available.
+- **Opening hours**: closed stores drop their shutters and dim their lights, you can't walk in, and Scout warns you before a store closes.
+- **Crowds**: quiet mornings, lunchtime peak, busier weekends and events.
+- **Weather** visible through the entrances and skylights: clear, cloudy or rain.
+- **Events** with their own set-pieces: a sneaker launch, a gaming night, a fashion runway, a food festival, and a Christmas market. The ad screens switch to the event.
+- **People**: animated shoppers with varied skin tones, hair, clothes and shopping bags. They are drawn efficiently, so about 45 people cost around 9 draw calls.
+- **Security**: guards patrol the centre, with a Security & First Aid desk at the main entrance and CCTV. Ask Scout "I need first aid".
+- **Ambient sound**, off by default; turn it on in Accessibility settings.
+
+### Graphics tiers
+| | High | Medium | Low |
+| --- | --- | --- | --- |
+| Sun shadows through skylights | 4K | 2K | — |
+| Real-time floor reflections | ✓ | — | — |
+| Ambient occlusion (GTAO) | ✓ | — | — |
+| Bloom on lights and screens | ✓ | ✓ | — |
+| Light shafts | ✓ | — | — |
+| Anti-aliasing | MSAA ×4 | MSAA ×2 | native |
+
+*Auto* starts at High on computers and Medium on phones, and steps down if frame rate drops. It's always adjustable in Accessibility settings.
+
+### VR headsets (WebXR)
+An **Enter VR** button appears only on browsers with `immersive-vr` support. In VR:
+- point at the floor and pull the trigger to teleport
+- left stick to move, right stick to snap-turn
+- point at a product to see its info card; trigger on the card adds it to your cart
+
+Desktop and mobile are unaffected. This mode hasn't been tested on a physical headset yet.
 
 ## Controls
 
 | | Desktop | Phone / tablet |
 |---|---|---|
-| Walk | `W` `A` `S` `D` (hold `Shift` to go faster), `↑` `↓` | Virtual joystick (bottom left) |
-| Look around | Drag with the mouse; `←` `→` turn; `Page Up/Down` look up/down | Swipe |
-| Interact | Click, or `E` for whatever is under the centre dot | Tap |
-| Shortcuts | `/` search · `M` map · `B` stores · `R` return to centre · `H` help · `Esc` close | Toolbar buttons |
+| Walk | `W` `A` `S` `D` (hold `Shift` to go faster), `↑` `↓` | Joystick (bottom left) |
+| Look | Drag; `←` `→`; `Page Up/Down` | Swipe |
+| Interact | Click, or `E` for the object under the centre dot | Tap |
+| Shortcuts | `/` search · `C` Scout · `K` cart · `M` map · `B` stores · `R` centre · `H` help · `Esc` close | Toolbar |
 
-Always visible: **Exit Virtual Mall** (top right) and **Centre** (toolbar), which takes you back to the central atrium.
+Accessibility options: large text, high contrast, reduce movement, invert look, sensitivity, graphics quality and sound. Keyboard control and screen-reader announcements work throughout, and every 3D feature has a non-3D equivalent.
 
-## What's in the MVP
-
-- **Cinematic landing page** with a live 3D fly-through behind the headline, *Enter Shopping Centre* and *Explore Stores* buttons, search and category shortcuts.
-- **3D centre**:
-  - shopfronts with signs
-  - escalators rising to a "Level 2 — coming soon" void
-  - seating and plants
-  - information kiosks and cycling digital ads
-  - walking shopper silhouettes
-  - skylights and lighting
-  - three entrances
-  - an amenities alcove (restrooms, parents' room, lifts)
-  - a food court with counters, menu boards and tables
-- **Stores**: name, categories, hours with open/closed status, description, products, demo promotions and unit location. Clicking a storefront opens its entrance panel, and *Walk inside* takes you in.
-- **Products**:
-  - a rotating 3D model (drag to spin)
-  - price and sale price
-  - size or option picker
-  - availability
-  - details and store location
-  - *Buy Online* (placeholder link)
-  - *Take me to the store*
-- **Search**: "Search stores or products...". For example, *running shoes* returns Stride Athletics — Running Shoes and Sneaker Vault — Running Shoes. Clicking a result starts directions.
-- **Indoor navigation**:
-  - glowing arrows on the floor
-  - a route on the mini-map and full map
-  - step-by-step text directions
-  - *Walk me there* auto-walk
-  - arrival detection
-  - automatic re-routing if you wander off
-- **Interactive map**: current location and heading, stores, food court, restrooms, entrances, parking, escalators, lifts and info desk, plus a *Take me to…* picker.
-- **Store directory** with category filters (Fashion, Technology, Food, Beauty, Sport, Entertainment).
-- **Food court** with menus, prices, popular items, hours and locations.
-- **Deals** section, with every offer clearly labelled as a demo promotion.
-- **Accessibility**:
-  - large text
-  - high contrast
-  - reduce movement (also follows your OS setting)
-  - invert look and sensitivity controls
-  - full keyboard control
-  - focus-trapped dialogs
-  - screen-reader announcements
-  - a 2D equivalent for every 3D feature
-
-## Replace the demo data
-
-Everything is generated from **`src/data/mall.ts`**: the floor-plan rectangles, stores, products, restaurants, facilities, promotions and hours. Edit that file and the 3D world, map, search, directory and navigation all update automatically. This is also the shape of the data a real centre would upload in the long-term product.
-
-## Documentation
-
-- [`docs/TECHNOLOGY.md`](docs/TECHNOLOGY.md): which technology to use and why (Three.js vs Babylon.js vs React/Next.js), the architecture, and how to add WebXR headset support later
-- [`docs/BUSINESS_MODEL.md`](docs/BUSINESS_MODEL.md): how this could make money, and what value it must prove first
-- [`docs/CLAUDE_CODE_PROMPT.md`](docs/CLAUDE_CODE_PROMPT.md): a detailed prompt that tells Claude Code exactly how to build this MVP from scratch
-
-## Project layout
+## Architecture
 
 ```
 src/
-  data/mall.ts          fictional centre data + helpers (single source of truth)
-  scene/                3D world, product models, canvas textures, silhouettes
-  controls/player.ts    first-person movement, look, joystick, collisions, auto-walk
-  nav/                  pathfinding (visibility graph + Dijkstra) and floor arrows
-  ui/                   panels, search, SVG map, views, product preview
-  main.ts               app state (landing ↔ mall), routing, interactions, main loop
+  data/mall.ts        centre, stores, products (+ ratings, colours, gift/outfit metadata), facilities
+  data/events.ts      simulated events calendar
+  ai/engine.ts        Scout: offline language understanding, catalogue search, outfits, gifts,
+                      comparisons, discovery, missions. Only ever returns catalogue products
+  ai/llm-brain.ts     optional LLM adapter (validated against the catalogue)
+  shop/cart.ts        persistent cart + budget
+  app/shopping.ts     companion chat, modes, smart budget, comparison, missions, Personal Shopper
+  app/live.ts         simulated clock, crowds, weather, opening hours, events (LiveFeed)
+  app/plan.ts         "Shop before you go" itinerary
+  app/audio.ts        synthesised ambient sound
+  scene/world.ts      3D centre: skylights, sun/shadows, reflective marble floor, shutters, security
+  scene/pipeline.ts   quality tiers: GTAO, bloom, MSAA, colour grade
+  scene/people.ts     instanced, animated shoppers and guards
+  scene/events3d.ts   event set-pieces
+  scene/compare3d.ts  holographic comparison stage
+  scene/companion3d.ts  the companion orb
+  xr/xr.ts            WebXR mode
+  platform/           digital-twin contracts, demo + JSON sources, validator
 ```
+
+## Docs
+- [`docs/DIGITAL_TWIN.md`](docs/DIGITAL_TWIN.md): connecting a real centre (floor plans, stores, products, promotions, hours, events) and the path to production
+- [`docs/TECHNOLOGY.md`](docs/TECHNOLOGY.md): technology choices and WebXR
+- [`docs/BUSINESS_MODEL.md`](docs/BUSINESS_MODEL.md): how this could make money, and what it must prove first
+- [`docs/CLAUDE_CODE_PROMPT.md`](docs/CLAUDE_CODE_PROMPT.md): a prompt to rebuild the original MVP

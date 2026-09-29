@@ -61,6 +61,13 @@ export class Player {
     this.pathDone = null;
   }
 
+  /** Move by a delta with collisions (used by VR thumbstick locomotion). */
+  nudge(dx: number, dz: number) {
+    this.x += dx;
+    this.z += dz;
+    this.collide();
+  }
+
   get following() {
     return !!this.path;
   }

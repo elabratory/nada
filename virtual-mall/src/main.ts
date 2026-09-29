@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import './styles.css';
 import {
   CENTRE,
+  STORES,
   areaAt,
   facilityById,
   placeName,
@@ -11,10 +12,12 @@ import {
   storeById,
   storeInside,
   storeOutside,
+  productApproach,
   type Category,
   type PlaceRef,
 } from './data/mall';
-import { buildWorld, type Interact, type World } from './scene/world';
+import { buildWorld, type Interact, type Quality, type World } from './scene/world';
+import { Pipeline } from './scene/pipeline';
 import { Player } from './controls/player';
 import { NavGraph, describeRoute, pathLength, type P } from './nav/pathfinding';
 import { RouteLine } from './nav/route3d';
@@ -23,6 +26,15 @@ import { closePanel, isPanelOpen, openPanel } from './ui/panel';
 import { createMap, type MallMap } from './ui/map';
 import { createSearchBox, type SearchResult } from './ui/search';
 import { ProductPreview } from './ui/preview';
+import { initShopping, type Shopping } from './app/shopping';
+import { LiveMall } from './app/live';
+import { Ambience } from './app/audio';
+import { planView } from './app/plan';
+import { EventStage } from './scene/events3d';
+import { EVENTS } from './data/events';
+import { liveView } from './ui/live-view';
+import { XRMode } from './xr/xr';
+import { createLLMBrain } from './ai/llm-brain';
 import {
   dealsView,
   directoryView,
@@ -67,8 +79,14 @@ const settings: Settings = {
   reducedMotion: prefersReduced,
   sensitivity: 1,
   invertLook: false,
+  quality: 'auto',
+  audio: false,
   ...(JSON.parse(store.get('vm-settings') ?? '{}') as Partial<Settings>),
 };
+
+const ambience = new Ambience();
+/** Simulated time of day, weather, crowds, opening hours and events. */
+const live = new LiveMall();
 
 function applySettings() {
   const root = document.documentElement;
@@ -79,6 +97,8 @@ function applySettings() {
     player.sensitivity = settings.sensitivity;
     player.invertLook = settings.invertLook;
   }
+  if (pipeline && settings.quality !== 'auto') setQuality(settings.quality);
+  ambience.setAudio(settings.audio);
   store.set('vm-settings', JSON.stringify(settings));
 }
 
@@ -107,18 +127,58 @@ const fadeEl = $('#fade');
 // ---------------------------------------------------------------------------
 let renderer: THREE.WebGLRenderer | null = null;
 let world: World | null = null;
+let pipeline: Pipeline | null = null;
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220);
+/** The tier actually in use ("auto" resolves to high on computers, medium on phones). */
+let activeQuality: Quality = settings.quality === 'auto' ? (touch ? 'medium' : 'high') : settings.quality;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, touch ? 1.5 : 1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  renderer.shadowMap.enabled = activeQuality !== 'low';
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
   world = buildWorld(renderer);
+  pipeline = new Pipeline(renderer, world, camera);
+  pipeline.setQuality(activeQuality);
 } catch (err) {
   console.error(err);
   document.documentElement.classList.add('no-webgl');
 }
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220);
+function setQuality(q: Quality, reason?: string) {
+  if (!pipeline || q === activeQuality) return;
+  activeQuality = q;
+  pipeline.setQuality(q);
+  fps.reset();
+  if (reason) toast(reason);
+}
+
+/** Measures frame rate and steps quality down when "auto" can't hold ~30 fps. */
+const fps = {
+  frames: 0,
+  time: 0,
+  grace: 3,
+  reset() {
+    this.frames = 0;
+    this.time = 0;
+    this.grace = 3;
+  },
+  tick(dt: number) {
+    if (settings.quality !== 'auto' || document.hidden) return;
+    if (this.grace > 0) {
+      this.grace -= dt;
+      return;
+    }
+    this.frames++;
+    this.time += dt;
+    if (this.time < 4) return;
+    const rate = this.frames / this.time;
+    this.frames = 0;
+    this.time = 0;
+    if (activeQuality === 'high' && rate < 30) setQuality('medium', 'Graphics set to Medium for smoother movement.');
+    else if (activeQuality === 'medium' && rate < 22) setQuality('low', 'Graphics set to Low for smoother movement.');
+  },
+};
 const nav = new NavGraph(world?.colliders ?? []);
 const routeLine = new RouteLine();
 world?.scene.add(routeLine.group);
@@ -202,6 +262,10 @@ function interact(i: Interact) {
       return openMap();
     case 'ad':
       return openDeals();
+    case 'companion':
+      return shop?.openCompanion();
+    case 'event':
+      return openLive();
   }
 }
 
@@ -218,15 +282,32 @@ let fullMap: MallMap | null = null;
 // Routing
 // ---------------------------------------------------------------------------
 interface ActiveRoute {
-  ref: PlaceRef;
+  /** Where the route ends. */
+  target: P;
+  ref?: PlaceRef;
   path: P[];
   productId?: string;
   name: string;
+  /** Replaces the default arrival message (used by shopping missions). */
+  onArrive?: () => void;
 }
 let route: ActiveRoute | null = null;
 
-function computeRoute(ref: PlaceRef) {
-  return nav.findRoute({ x: player.x, z: player.z }, placeTarget(ref));
+function recompute(r: ActiveRoute) {
+  return nav.findRoute({ x: player.x, z: player.z }, r.target);
+}
+
+/** Draw a route to any floor point and show the directions card. */
+function routeTo(target: P, name: string, opts: { productId?: string; onArrive?: () => void; ref?: PlaceRef } = {}) {
+  const path = nav.findRoute({ x: player.x, z: player.z }, target);
+  if (!path) {
+    toast(`Sorry, no route to ${name} was found.`);
+    return false;
+  }
+  setRoute({ target, path, name, ...opts });
+  const steps = describeRoute(path, name);
+  announce(`Route to ${name}, ${Math.round(pathLength(path))} metres. ${steps.join('. ')}.`);
+  return true;
 }
 
 function setRoute(r: ActiveRoute | null) {
@@ -267,7 +348,7 @@ function renderRouteCard() {
 function walkRoute() {
   if (!route) return;
   // Re-plan from where we are now, in case the user wandered off.
-  const path = computeRoute(route.ref) ?? route.path;
+  const path = recompute(route) ?? route.path;
   setRoute({ ...route, path });
   if (settings.reducedMotion) {
     const end = path[path.length - 1];
@@ -287,11 +368,13 @@ function arrive() {
   setRoute(null);
   if (product) {
     world?.highlightProduct(product.id);
-    toast(`You have arrived at ${r.name}. ${product.name} is on the highlighted display.`);
     // Face the product.
     const at = world?.productAnchor(product.id);
     if (at) player.yaw = Math.atan2(-(at.x - player.x), -(at.z - player.z));
-  } else toast(`You have arrived at ${r.name}.`);
+  }
+  if (r.onArrive) r.onArrive();
+  else if (product) toast(`You have arrived at ${r.name}. ${product.name} is on the highlighted display.`);
+  else toast(`You have arrived at ${r.name}.`);
 }
 
 function nearPolyline(path: P[], x: number, z: number) {
@@ -441,16 +524,10 @@ const actions: Actions = {
   navigate(ref, opts = {}) {
     const go = () => {
       closePanel();
-      const path = computeRoute(ref);
-      if (!path) {
-        toast(`Sorry, no route to ${placeName(ref)} was found.`);
-        return;
-      }
-      const name = placeName(ref);
-      setRoute({ ref, path, productId: opts.productId, name });
-      const steps = describeRoute(path, name);
-      announce(`Route to ${name}, ${Math.round(pathLength(path))} metres. ${steps.join('. ')}. Follow the blue arrows or choose Walk me there.`);
-      if (!inMall()) return;
+      const product = opts.productId ? productById(opts.productId) : undefined;
+      // Products route to the exact display, everything else to the place.
+      const target = product ? productApproach(product) : placeTarget(ref);
+      if (!routeTo(target, placeName(ref), { ref, productId: opts.productId })) return;
       routeCard.querySelector<HTMLButtonElement>('.actions .btn')?.focus({ preventScroll: true });
     };
     if (inMall()) go();
@@ -467,7 +544,7 @@ const actions: Actions = {
         teleport(inside.x, inside.z, yaw, () => announce(`You are inside ${s.name}. Select a product on display to see details.`));
         return;
       }
-      setRoute({ ref: { kind: 'store', id }, path, name: s.name });
+      setRoute({ target: inside, ref: { kind: 'store', id }, path, name: s.name });
       player.followPath(path, () => {
         setRoute(null);
         player.yaw = yaw;
@@ -494,6 +571,7 @@ const actions: Actions = {
     const s = storeById(p.storeId)!;
     const body = productView(p, actions);
     openPanel({ title: p.name, subtitle: `${s.name} · ${p.type}`, body, onBack: () => actions.openStore(s.id) });
+    shop?.onProductViewed(id);
     const host = body.querySelector<HTMLElement>('.preview');
     if (host) requestAnimationFrame(() => preview.mount(host, p));
   },
@@ -510,7 +588,159 @@ const actions: Actions = {
   openDirectory(category) {
     openPanel({ title: 'Stores', subtitle: `${CENTRE.name} store directory`, body: directoryView(actions, category), variant: 'drawer' });
   },
+  addToCart: (id, option) => shop?.addToCart(id, option) ?? false,
+  toggleCompare: (id) => shop?.toggleCompare(id),
+  inCompare: (id) => shop?.inCompare(id) ?? false,
+  askCompanion: (text) => {
+    closePanel();
+    shop?.ask(text);
+  },
 };
+
+// ---------------------------------------------------------------------------
+// AI shopping layer: companion, cart, budget, comparison, missions
+// ---------------------------------------------------------------------------
+const shop: Shopping | null = initShopping({
+  camera,
+  scene: world?.scene ?? null,
+  pickables: world?.pickables ?? [],
+  nav,
+  player,
+  inMall,
+  enterMall: (after) => enterMall(after),
+  navigate: (ref, opts) => actions.navigate(ref, opts),
+  routeTo: (target, name, opts) => {
+    const go = () => routeTo(target, name, opts);
+    if (inMall()) return go();
+    enterMall(go);
+    return true;
+  },
+  clearRoute: () => setRoute(null),
+  highlight: (id) => world?.highlightProduct(id),
+  openProduct: (id) => actions.openProduct(id),
+  isOpen: (storeId) => isStoreOpen(storeId),
+  event: () => currentEvent(),
+  reducedMotion: () => settings.reducedMotion,
+});
+
+// Optional LLM brain behind your own proxy: VITE_COMPANION_ENDPOINT=https://… or ?brain=https://…
+const brainUrl = (import.meta.env.VITE_COMPANION_ENDPOINT as string | undefined) ?? new URLSearchParams(location.search).get('brain');
+if (brainUrl) shop?.setBrain(createLLMBrain(brainUrl));
+
+function isStoreOpen(storeId: string): boolean {
+  return live.isOpen(storeId);
+}
+function currentEvent(): { name: string; productIds: string[] } | null {
+  return live.event ? { name: live.event.name, productIds: live.event.productIds } : null;
+}
+
+// ---------------------------------------------------------------------------
+// Living mall: time of day, weather, crowds, opening hours, events
+// ---------------------------------------------------------------------------
+const eventStage = new EventStage();
+world?.scene.add(eventStage.group);
+let eventPicks: THREE.Object3D[] = [];
+let lastAmb = { hour: -99, weather: '', crowd: -1 };
+const liveChip = $('#live-chip');
+
+function applyAmbience(force = false) {
+  const hour = live.hour;
+  // Throttled: shadow maps and light shafts are rebuilt when the sun moves.
+  if (force || Math.abs(hour - lastAmb.hour) >= 0.25 || live.weather !== lastAmb.weather || Math.abs(live.crowd - lastAmb.crowd) > 0.02) {
+    lastAmb = { hour, weather: live.weather, crowd: live.crowd };
+    world?.setAmbience({ hour, weather: live.weather, crowd: live.crowd });
+    ambience.setCrowd(live.crowd);
+  }
+  const crowd = live.crowd < 0.2 ? 'Quiet' : live.crowd < 0.5 ? 'Steady' : live.crowd < 0.8 ? 'Busy' : 'Very busy';
+  const wx = live.weather === 'clear' ? '☀' : live.weather === 'cloudy' ? '☁' : '🌧';
+  liveChip.textContent = `${live.label()} · ${crowd} · ${wx}${live.event ? ` · ${live.event.name}` : ''}${live.mode === 'preview' ? ' · preview' : ''}`;
+}
+
+function applyStores() {
+  for (const s of STORES) world?.setStoreOpen(s.id, live.isOpen(s.id));
+}
+
+function applyEvent(announceIt: boolean) {
+  const e = live.event;
+  eventStage.set(e);
+  if (world) {
+    for (const o of eventPicks) {
+      const i = world.pickables.indexOf(o);
+      if (i >= 0) world.pickables.splice(i, 1);
+    }
+    eventPicks = [...eventStage.pickables];
+    world.pickables.unshift(...eventPicks);
+    world.setEventSlide(e ? { title: e.name, sub: e.description, from: e.colors[0], to: '#111827' } : null);
+  }
+  if (e && announceIt && inMall()) {
+    toast(`Event on now: ${e.name} (demo). ${e.tagline}.`, 5000);
+    if (shop && shop.mode !== 'explore') shop.say(`${e.name} is on now. Want to see the featured products?`, { chips: ['What’s on?'] });
+  }
+}
+
+window.addEventListener('pointerdown', () => settings.audio && ambience.setAudio(true), { once: true });
+live.addEventListener('change', () => applyAmbience());
+live.addEventListener('stores', applyStores);
+live.addEventListener('event', () => applyEvent(true));
+live.addEventListener('closing', (ev) => {
+  const { storeId, minutes } = (ev as CustomEvent).detail as { storeId: string; minutes: number };
+  const st = storeById(storeId)!;
+  if (inMall()) toast(`${st.name} closes in ${minutes} minutes.`);
+  if (shop && shop.mode !== 'explore' && inMall()) shop.say(`Heads up: ${st.name} closes in ${minutes} minutes.`);
+});
+applyAmbience(true);
+applyStores();
+applyEvent(false);
+
+function openLive() {
+  openPanel({
+    title: 'What’s on',
+    subtitle: 'Time of day, crowds, weather and events (simulated)',
+    body: liveView(live, {
+      onChange: () => applyAmbience(),
+      goToEvent: (id) => {
+        const e = EVENTS.find((x) => x.id === id)!;
+        live.eventChoice = id;
+        live.recompute(true);
+        closePanel();
+        const stand = e.kind === 'food-festival' ? { x: e.x, z: 8.4 } : { x: e.x + 3.5, z: 3.4 };
+        const go = () => routeTo(stand, e.name, {});
+        if (inMall()) go();
+        else enterMall(go);
+      },
+    }),
+  });
+}
+
+function openPlan() {
+  const ids = shop?.cart.lines.map((l) => l.productId) ?? [];
+  openPanel({
+    title: 'Shop before you go',
+    subtitle: 'Your Shopping Plan for a real visit',
+    variant: 'wide',
+    body: planView({
+      productIds: ids,
+      pathLen: (a, b) => {
+        const p = nav.findRoute(a, b);
+        return p ? pathLength(p) : Math.hypot(a.x - b.x, a.z - b.z) * 1.4;
+      },
+      onAddItems: () => {
+        closePanel();
+        enterMall(() => shop?.openCompanion());
+      },
+      onStart: (it) => {
+        closePanel();
+        const ent = facilityById(it.opts.arrival === 'car' ? 'east-entrance' : it.opts.arrival === 'bus' ? 'south-entrance' : 'west-entrance')!;
+        const at = ent.approach ?? { x: ent.x, z: ent.z };
+        live.setPreview(it.opts.start, it.opts.day);
+        applyAmbience(true);
+        const faceIn = Math.atan2(-(0 - at.x), -(0 - at.z));
+        player.place(at.x, at.z, faceIn);
+        enterMall(() => shop?.startMission(shop.planForCart()));
+      },
+    }),
+  });
+}
 
 function openFood() {
   openPanel({ title: 'Food & restaurants', subtitle: 'Food Court · ground floor', body: foodView(actions) });
@@ -576,6 +806,18 @@ bind('[data-open="info"]', openInfo);
 bind('[data-open="access"]', openSettings);
 bind('[data-open="help"]', openHelp);
 bind('[data-open="centre"]', returnToCentre);
+bind('[data-open="live"]', openLive);
+bind('[data-open="plan"]', openPlan);
+$('#landing-ask').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const input = $<HTMLInputElement>('#landing-ask-input');
+  const q = input.value.trim() || 'Just looking';
+  input.value = '';
+  enterMall(() => {
+    shop?.setMode('shopping');
+    shop?.ask(q);
+  });
+});
 document.querySelectorAll<HTMLElement>('[data-category]').forEach((el) =>
   el.addEventListener('click', () => actions.openDirectory(el.dataset.category as Category)),
 );
@@ -592,13 +834,17 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'b') actions.openDirectory('All');
   else if (k === 'r') returnToCentre();
   else if (k === 'h') openHelp();
+  else if (k === 'c') {
+    e.preventDefault();
+    shop?.openCompanion();
+  } else if (k === 'k') shop?.openCart();
 });
 
 window.addEventListener('resize', resize);
 function resize() {
   const w = window.innerWidth;
   const hh = window.innerHeight;
-  renderer?.setSize(w, hh, false);
+  pipeline?.setSize(w, hh);
   camera.aspect = w / hh;
   camera.fov = w < 700 ? 78 : 70;
   camera.updateProjectionMatrix();
@@ -636,7 +882,8 @@ function tick(now?: number) {
       done();
     }
   } else if (mode === 'mall') {
-    player.update(dt, camera, rm);
+    if (xr?.presenting) xr.update(dt);
+    else player.update(dt, camera, rm);
     areaTimer += dt;
     focusTimer += dt;
     rerouteTimer += dt;
@@ -653,7 +900,7 @@ function tick(now?: number) {
     if (rerouteTimer > 1.2) {
       rerouteTimer = 0;
       if (route && !player.following && nearPolyline(route.path, player.x, player.z) > 5) {
-        const path = computeRoute(route.ref);
+        const path = recompute(route);
         if (path) setRoute({ ...route, path });
       }
     }
@@ -666,10 +913,16 @@ function tick(now?: number) {
   }
 
   world?.update(dt, t, rm);
+  shop?.update(dt, t, window.innerWidth, window.innerHeight);
+  live.tick(rawDt);
+  eventStage.update(t, dt, rm);
+  ambience.update(dt);
   routeLine.update(t, rm);
   preview.render(dt, rm);
-  if (renderer && world) renderer.render(world.scene, camera);
-  requestAnimationFrame(tick);
+  fps.tick(rawDt);
+  pipeline?.render();
+  // WebXR needs the renderer's animation loop; without WebGL fall back to rAF.
+  if (!renderer) requestAnimationFrame(tick);
 }
 
 function updateArea() {
@@ -701,9 +954,49 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 }
 
+// ---------------------------------------------------------------------------
+// WebXR (VR headsets) — only offered when the browser supports immersive-vr
+// ---------------------------------------------------------------------------
+const xr: XRMode | null =
+  renderer && world
+    ? new XRMode({
+        renderer,
+        scene: world.scene,
+        camera,
+        player,
+        pickables: () => world!.pickables,
+        canStand: (x, z) => {
+          const p = nav.findRoute({ x: player.x, z: player.z }, { x, z });
+          return !nav.blockedPoint({ x, z }) && !!p && pathLength(p) < 45;
+        },
+        addToCart: (id) => shop?.addToCart(id),
+        onStart: () => {
+          document.body.classList.add('in-xr');
+          announce('VR mode started. Point and pull the trigger to teleport or select.');
+        },
+        onEnd: () => {
+          document.body.classList.remove('in-xr');
+          player.pitch = 0;
+        },
+      })
+    : null;
+xr?.detect().then((ok) => {
+  if (!ok) return;
+  for (const id of ['#xr-btn', '#xr-landing']) {
+    const b = $(id);
+    b.hidden = false;
+    b.addEventListener('click', () =>
+      enterMall(() =>
+        xr.enter().catch(() => toast('Couldn’t start VR. Check that your headset is connected and try again.')),
+      ),
+    );
+  }
+});
+
 placeLandingCamera();
-tick();
+if (renderer) renderer.setAnimationLoop(tick);
+else tick();
 if (new URLSearchParams(location.search).has('debug')) {
-  Object.assign(window, { __vm: { renderer, player, world, camera, actions, pick, raycaster, get mode() { return mode; } } });
+  Object.assign(window, { __vm: { renderer, player, world, camera, actions, pick, raycaster, live, shop, pipeline, applyAmbience, applyEvent, setQuality, openLive, openPlan, get mode() { return mode; } } });
 }
 document.documentElement.classList.add('ready');

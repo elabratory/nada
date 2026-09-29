@@ -53,9 +53,18 @@ Performance choices:
 - Shadows are replaced by lighting and an environment map.
 - Nothing downloads after the first page load.
 
-## Adding VR headset support later (WebXR)
+## Rendering quality (implemented)
 
-WebXR is practical because Three.js supports it natively. The plan:
+`src/scene/pipeline.ts` has three tiers:
+- **High**: GTAO ambient occlusion, bloom, MSAA ×4, planar floor reflections, 4K sun shadows, light shafts
+- **Medium**: bloom, MSAA ×2, 2K shadows
+- **Low**: direct render
+
+The sun's shadow map is only re-rendered when the time of day changes, so shadows are nearly free per frame. The crowd is instanced, at about 9 draw calls for 45 people. **Auto** quality steps down when the frame rate drops below 30 fps.
+
+## VR headset support (WebXR): implemented as a progressive enhancement
+
+This is now in `src/xr/xr.ts`, behind feature detection (see `docs/DIGITAL_TWIN.md`). It hasn't been tested on a physical headset yet. The design it follows:
 
 1. **Feature-detect.** Show an "Enter VR" button only when `navigator.xr?.isSessionSupported('immersive-vr')` resolves to `true`. Everyone else sees the normal site.
 2. **Enable XR in the renderer.** Set `renderer.xr.enabled = true` and use `VRButton.createButton(renderer)` from `three/examples/jsm/webxr/VRButton.js`. Switch the loop to `renderer.setAnimationLoop(tick)` (XR requires it).

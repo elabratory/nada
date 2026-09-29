@@ -26,25 +26,35 @@
           <button type="button" data-open="food">Food</button>
           <button type="button" data-open="deals">Deals</button>
           <button type="button" data-open="map">Map</button>
+          <button type="button" data-open="live">What’s on</button>
+          <button type="button" data-open="plan">Plan your visit</button>
           <button type="button" data-open="info">Hours &amp; parking</button>
           <button type="button" data-open="access" data-icon="access" aria-label="Accessibility settings"></button>
         </nav>
       </header>
 
       <main id="landing-main" class="hero">
-        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Now open · Harbour Central (demo centre)</p>
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> An AI shopping centre you can actually explore · Harbour Central (demo)</p>
         <h1>Step Inside Your Shopping&nbsp;Centre.</h1>
-        <p class="lede">Explore stores, discover products and find your way around — before you even arrive.</p>
+        <p class="lede">Explore stores, discover products and find your way around — before you even arrive. Scout, your AI shopping companion, finds what you need, keeps you on budget and walks you there.</p>
         <div class="cta">
           <button id="enter-btn" type="button" class="btn primary xl">Enter Shopping Centre</button>
           <button id="explore-btn" type="button" class="btn glass xl">Explore Stores</button>
+          <button id="xr-landing" type="button" class="btn glass xl" hidden>Enter in VR</button>
         </div>
+        <form id="landing-ask" class="landing-ask" aria-label="Ask Scout">
+          <label for="landing-ask-input" class="sr-only">Ask Scout what you’re shopping for</label>
+          <span class="scout-dot" aria-hidden="true"></span>
+          <input id="landing-ask-input" type="text" autocomplete="off" placeholder="Ask Scout: “I need running shoes under $150”" />
+          <button type="submit" class="btn primary small">Ask</button>
+        </form>
         <div id="landing-search" class="landing-search"></div>
-        <ul class="features" aria-label="What you can do">
-          <li><strong>Walk it in 3D</strong><span>Look around 360° on desktop or phone. No headset.</span></li>
-          <li><strong>Step into stores</strong><span>Browse displays, prices, sizes and stock.</span></li>
-          <li><strong>Get directions</strong><span>Follow arrows to any store, toilet or car park.</span></li>
-        </ul>
+        <ol class="features journey" aria-label="How it works">
+          <li><strong>Discover</strong><span>Tell Scout what you need, or just browse. Only real products stocked here.</span></li>
+          <li><strong>Compare</strong><span>Put options side by side in 3D: price, rating, features, stock.</span></li>
+          <li><strong>Plan</strong><span>A shopping mission with the quickest route, time and total cost.</span></li>
+          <li><strong>Shop</strong><span>Walk it in 3D or plan your real visit, with your cart and budget.</span></li>
+        </ol>
         <nav class="cats" aria-label="Browse by category">
           <button type="button" data-category="Fashion">Fashion</button>
           <button type="button" data-category="Technology">Technology</button>
@@ -62,9 +72,13 @@
     <!-- ============ IN-MALL HUD ============ -->
     <div id="hud" inert aria-hidden="true">
       <div class="hud-top">
-        <div class="where-chip">
-          <strong>Harbour Central</strong>
-          <span id="where">Main Entrance</span>
+        <div class="where-stack">
+          <div class="where-chip">
+            <strong>Harbour Central</strong>
+            <span id="where">Main Entrance</span>
+          </div>
+          <button id="live-chip" type="button" class="live-chip" data-open="live" aria-label="What’s on: time, crowds and events">…</button>
+          <button id="xr-btn" type="button" class="live-chip xr" hidden>Enter VR</button>
         </div>
         <div id="hud-search" class="hud-search"></div>
         <button id="exit-btn" type="button" class="btn exit" data-icon="exit">Exit Virtual Mall</button>
@@ -75,6 +89,8 @@
         <button type="button" data-open="food" data-icon="food"><span>Food</span></button>
         <button type="button" data-open="deals" data-icon="deals"><span>Deals</span></button>
         <button type="button" data-open="map" data-icon="map"><span>Map</span></button>
+        <button type="button" data-open="live" data-icon="clock"><span>What’s on</span></button>
+        <button type="button" data-open="plan" data-icon="pin"><span>Plan visit</span></button>
         <button type="button" data-open="info" data-icon="info"><span>Info</span></button>
         <button type="button" data-open="centre" data-icon="home"><span>Centre</span></button>
         <button type="button" data-open="access" data-icon="access"><span>Access</span></button>

@@ -7,13 +7,16 @@
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "export:centre": "esbuild scripts/export-centre.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/export-centre.mjs && node node_modules/.cache/export-centre.mjs",
+    "test": "esbuild scripts/test-engine.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/test-engine.mjs && node node_modules/.cache/test-engine.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3",
     "vite": "^8.3.1"
   }

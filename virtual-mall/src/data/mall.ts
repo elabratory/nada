@@ -70,6 +70,16 @@ export interface Product {
   accent?: string;
   /** Placeholder purchase link. Would point at the retailer in production. */
   buyUrl: string;
+  /** Colour names shoppers would use ("black", "white"...). Filled by enrichProducts(). */
+  colors?: string[];
+  /** Simulated demo rating out of 5 and review count. */
+  rating?: number;
+  reviews?: number;
+  /** Where the item fits in an outfit, if it's clothing or footwear. */
+  role?: 'top' | 'bottom' | 'shoes' | 'outerwear' | 'accessory';
+  /** Works as a gift, and the hobbies it suits (never demographic guesses). */
+  gift?: boolean;
+  interests?: string[];
 }
 
 export interface Promotion {
@@ -122,7 +132,7 @@ export interface Restaurant {
   tags: string[];
 }
 
-export type FacilityKind = 'restroom' | 'lift' | 'escalator' | 'entrance' | 'parking' | 'info' | 'baby';
+export type FacilityKind = 'restroom' | 'lift' | 'escalator' | 'entrance' | 'parking' | 'info' | 'baby' | 'security';
 
 export interface Facility {
   id: string;
@@ -965,6 +975,16 @@ export const FACILITIES: Facility[] = [
     tags: ['parking', 'car park', 'carpark', 'car', 'entrance', 'exit', 'east', 'ev charging'],
   },
   {
+    id: 'security',
+    name: 'Security & First Aid',
+    kind: 'security',
+    description: 'Staffed security desk at the Main Entrance with first aid, lost children point and CCTV monitoring. Guards also patrol the centre (demo).',
+    x: -45.5,
+    z: -6.5,
+    approach: { x: -43.2, z: -4.6 },
+    tags: ['security', 'guard', 'guards', 'first aid', 'emergency', 'lost child', 'safety', 'police', 'injured', 'medical'],
+  },
+  {
     id: 'info-desk',
     name: 'Information Desk',
     kind: 'info',
@@ -1042,6 +1062,222 @@ export type PlaceRef =
   | { kind: 'restaurant'; id: string }
   | { kind: 'facility'; id: string };
 
+// ---------- extra demo products & enrichment used by the AI companion ----------
+
+const EXTRA: Product[] = [
+  {
+    id: 'thread-hoodie-black',
+    storeId: 'thread',
+    name: 'Everyday Hoodie — Black',
+    type: 'Hoodie',
+    price: 39.99,
+    optionLabel: 'Available sizes',
+    options: SIZES_APPAREL,
+    description: 'Midweight cotton-blend hoodie in washed black with a kangaroo pocket.',
+    details: ['Cotton/recycled polyester', 'Regular fit', 'Brushed inside', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['hoodie', 'black hoodie', 'jumper', 'sweater', 'clothing', 'basics'],
+    shape: 'hoodie',
+    color: '#1c1c1f',
+    buyUrl: img('thread', 'everyday-hoodie-black'),
+  },
+  {
+    id: 'thread-jeans',
+    storeId: 'thread',
+    name: 'Slim Stretch Jeans',
+    type: 'Jeans',
+    price: 49.99,
+    optionLabel: 'Waist',
+    options: ['28', '30', '32', '34', '36'],
+    description: 'Slim-fit jeans with a little stretch for comfort.',
+    details: ['98% cotton, 2% elastane', 'Slim fit', 'Mid rise', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['jeans', 'denim', 'pants', 'trousers', 'clothing'],
+    shape: 'shorts',
+    color: '#2b4a7a',
+    buyUrl: img('thread', 'slim-jeans'),
+  },
+  {
+    id: 'thread-chinos',
+    storeId: 'thread',
+    name: 'Relaxed Chinos',
+    type: 'Chinos',
+    price: 44.99,
+    optionLabel: 'Waist',
+    options: ['28', '30', '32', '34', '36'],
+    description: 'Soft cotton twill chinos with a relaxed, tapered leg.',
+    details: ['100% cotton twill', 'Relaxed tapered fit', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['chinos', 'pants', 'trousers', 'clothing', 'smart casual'],
+    shape: 'shorts',
+    color: '#c8b48a',
+    buyUrl: img('thread', 'relaxed-chinos'),
+  },
+  {
+    id: 'stride-hoodie',
+    storeId: 'stride',
+    name: 'Stride Tech Fleece Hoodie',
+    type: 'Hoodie',
+    price: 95,
+    optionLabel: 'Available sizes',
+    options: SIZES_APPAREL,
+    description: 'Lightweight technical fleece hoodie in black. Warm without bulk.',
+    details: ['Double-knit tech fleece', 'Zip pockets', 'Slim fit', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['hoodie', 'black hoodie', 'fleece', 'activewear', 'clothing', 'training'],
+    shape: 'hoodie',
+    color: '#121214',
+    buyUrl: img('stride', 'tech-fleece-hoodie'),
+  },
+  {
+    id: 'orchard-phone-se',
+    storeId: 'orchard',
+    name: 'Orchard Phone SE',
+    type: 'Smartphone',
+    price: 699,
+    optionLabel: 'Storage',
+    options: ['128 GB', '256 GB'],
+    description: 'A compact 6.1-inch phone with the same fast chip as the flagship and a single 48 MP camera.',
+    details: ['6.1" OLED display', '48 MP camera', 'Face unlock', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock — pick up today',
+    tags: ['phone', 'smartphone', 'mobile', 'iphone', 'cell'],
+    shape: 'phone',
+    color: '#f1f3f5',
+    buyUrl: img('orchard', 'phone-se'),
+  },
+  {
+    id: 'volt-phone',
+    storeId: 'volt',
+    name: 'Nova A5 Smartphone',
+    type: 'Smartphone',
+    price: 449,
+    optionLabel: 'Storage',
+    options: ['128 GB', '256 GB'],
+    description: 'Great-value Android-style phone with a 120 Hz screen and two-day battery.',
+    details: ['6.5" 120 Hz display', '50 MP camera', '5000 mAh battery', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['phone', 'smartphone', 'mobile', 'android', 'cell'],
+    shape: 'phone',
+    color: '#3a86ff',
+    buyUrl: img('volt', 'nova-a5'),
+  },
+  {
+    id: 'volt-buds',
+    storeId: 'volt',
+    name: 'Pulse Buds',
+    type: 'Wireless Earbuds',
+    price: 129,
+    description: 'True-wireless earbuds with noise cancelling and a pocketable case.',
+    details: ['Noise cancelling', '8 h + 24 h case', 'Sweat resistant', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['earbuds', 'headphones', 'audio', 'music', 'wireless', 'running'],
+    shape: 'headphones',
+    color: '#f8f9fa',
+    buyUrl: img('volt', 'pulse-buds'),
+  },
+  {
+    id: 'lumiere-gift-set',
+    storeId: 'lumiere',
+    name: 'Discovery Gift Set',
+    type: 'Gift Set',
+    price: 65,
+    description: 'Five deluxe minis (cleanser, serum, cream, mist, balm) in a gift box.',
+    details: ['5 deluxe minis', 'Gift-boxed', 'Suits all skin types', 'Demo product'],
+    availability: 'In stock',
+    stockNote: 'In stock in store',
+    tags: ['gift set', 'skincare', 'gift', 'minis', 'present'],
+    shape: 'jar',
+    color: '#ffc8dd',
+    buyUrl: img('lumiere', 'discovery-set'),
+  },
+];
+for (const p of EXTRA) STORES.find((s) => s.id === p.storeId)!.products.push(p);
+
+/** Simulated metadata the companion reasons over: colours, demo ratings, outfit roles and gift suitability. */
+const META: Record<string, Partial<Product>> = {
+  'stride-pace-runner': { colors: ['orange', 'white'], rating: 4.6, reviews: 412, role: 'shoes', gift: false, interests: ['running', 'fitness'] },
+  'stride-trail': { colors: ['green', 'yellow'], rating: 4.4, reviews: 188, role: 'shoes', interests: ['running', 'outdoors'] },
+  'stride-tee': { colors: ['blue'], rating: 4.3, reviews: 96, role: 'top', gift: true, interests: ['running', 'fitness'] },
+  'stride-shorts': { colors: ['black'], rating: 4.2, reviews: 74, role: 'bottom', interests: ['running', 'fitness'] },
+  'stride-bottle': { colors: ['orange'], rating: 4.7, reviews: 530, role: 'accessory', gift: true, interests: ['fitness', 'running', 'outdoors'] },
+  'stride-hoodie': { colors: ['black'], rating: 4.5, reviews: 221, role: 'top', gift: true, interests: ['fitness', 'fashion'] },
+  'orchard-phone': { colors: ['black', 'navy'], rating: 4.7, reviews: 1320, gift: true, interests: ['tech'] },
+  'orchard-phone-se': { colors: ['white', 'black'], rating: 4.5, reviews: 640, gift: true, interests: ['tech'] },
+  'orchard-book': { colors: ['silver'], rating: 4.8, reviews: 870, gift: false, interests: ['tech', 'study'] },
+  'orchard-pad': { colors: ['grey'], rating: 4.6, reviews: 510, gift: true, interests: ['tech', 'art', 'study'] },
+  'orchard-watch': { colors: ['pink', 'black'], rating: 4.5, reviews: 455, gift: true, interests: ['tech', 'fitness', 'running'] },
+  'orchard-pods': { colors: ['white'], rating: 4.6, reviews: 702, gift: true, interests: ['music', 'tech'] },
+  'thread-tee': { colors: ['white', 'cream'], rating: 4.2, reviews: 380, role: 'top', interests: ['fashion'] },
+  'thread-linen': { colors: ['light blue'], rating: 4.1, reviews: 142, role: 'top', interests: ['fashion'] },
+  'thread-denim': { colors: ['blue'], rating: 4.4, reviews: 260, role: 'outerwear', gift: true, interests: ['fashion'] },
+  'thread-hoodie': { colors: ['purple'], rating: 4.0, reviews: 118, role: 'top', interests: ['fashion'] },
+  'thread-hoodie-black': { colors: ['black'], rating: 4.3, reviews: 305, role: 'top', gift: true, interests: ['fashion'] },
+  'thread-jeans': { colors: ['blue', 'indigo'], rating: 4.2, reviews: 290, role: 'bottom', interests: ['fashion'] },
+  'thread-chinos': { colors: ['beige', 'tan'], rating: 4.1, reviews: 133, role: 'bottom', interests: ['fashion'] },
+  'thread-tote': { colors: ['yellow'], rating: 4.0, reviews: 65, role: 'accessory', gift: true, interests: ['fashion'] },
+  'lumiere-lipstick': { colors: ['berry', 'red', 'nude'], rating: 4.4, reviews: 390, gift: true, interests: ['beauty'] },
+  'lumiere-parfum': { colors: [], rating: 4.6, reviews: 214, gift: true, interests: ['beauty'] },
+  'lumiere-serum': { colors: [], rating: 4.5, reviews: 480, gift: false, interests: ['beauty', 'skincare'] },
+  'lumiere-cream': { colors: [], rating: 4.3, reviews: 260, gift: false, interests: ['beauty', 'skincare'] },
+  'lumiere-gift-set': { colors: ['pink'], rating: 4.7, reviews: 175, gift: true, interests: ['beauty', 'skincare'] },
+  'vault-velocity': { colors: ['white', 'red'], rating: 4.7, reviews: 356, role: 'shoes', gift: false, interests: ['running', 'fitness'] },
+  'vault-court': { colors: ['white', 'navy'], rating: 4.5, reviews: 610, role: 'shoes', gift: true, interests: ['fashion', 'sneakers'] },
+  'vault-cap': { colors: ['red'], rating: 4.1, reviews: 88, role: 'accessory', gift: true, interests: ['fashion', 'sneakers', 'sport'] },
+  'vault-socks': { colors: ['white'], rating: 4.4, reviews: 240, role: 'accessory', gift: true, interests: ['running', 'fitness'] },
+  'volt-tv': { colors: ['black'], rating: 4.6, reviews: 310, gift: false, interests: ['movies', 'gaming', 'tech'] },
+  'volt-speaker': { colors: ['green'], rating: 4.5, reviews: 420, gift: true, interests: ['music', 'outdoors'] },
+  'volt-headphones': { colors: ['black'], rating: 4.6, reviews: 505, gift: true, interests: ['music', 'tech', 'gaming'] },
+  'volt-console': { colors: ['white'], rating: 4.8, reviews: 980, gift: true, interests: ['gaming'] },
+  'volt-vinyl': { colors: [], rating: 4.3, reviews: 57, gift: true, interests: ['music'] },
+  'volt-phone': { colors: ['blue'], rating: 4.3, reviews: 390, gift: true, interests: ['tech'] },
+  'volt-buds': { colors: ['white'], rating: 4.4, reviews: 330, gift: true, interests: ['music', 'running', 'tech'] },
+};
+for (const s of STORES) for (const p of s.products) Object.assign(p, { colors: [], rating: 4.2, reviews: 50 }, META[p.id]);
+
+/** Product features for comparisons (the details minus the demo marker). */
+export const featuresOf = (p: Product) => p.details.filter((d) => d !== 'Demo product');
+
+/**
+ * Display positions inside a store (x offset from the door, depth from the
+ * frontage). Shared by the 3D builder and navigation so the companion can
+ * walk you to the exact display.
+ */
+export const DISPLAY_SLOTS: [number, number][] = [
+  [-4.2, 4.5],
+  [4.2, 4.5],
+  [-3.4, 8.2],
+  [3.4, 8.2],
+  [0, 9.2],
+  [-1.9, 6.4],
+  [1.9, 6.4],
+  [-4.8, 11.6],
+];
+
+/** Floor position of a product's display pedestal. */
+export function productSpot(p: Product) {
+  const s = storeById(p.storeId)!;
+  const i = s.products.findIndex((x) => x.id === p.id);
+  const [ox, depth] = DISPLAY_SLOTS[i % DISPLAY_SLOTS.length];
+  const inward = s.side === 'north' ? -1 : 1;
+  const zf = s.side === 'north' ? s.rect.z2 : s.rect.z1;
+  return { x: s.doorX + ox, z: zf + inward * depth };
+}
+
+/** A standing spot just in front of a product's display, on the door side. */
+export function productApproach(p: Product) {
+  const s = storeById(p.storeId)!;
+  const spot = productSpot(p);
+  const toward = s.side === 'north' ? 1 : -1;
+  return { x: spot.x, z: spot.z + toward * 1.3 };
+}
+
 export const storeById = (id: string) => STORES.find((s) => s.id === id);
 export const restaurantById = (id: string) => RESTAURANTS.find((r) => r.id === id);
 export const facilityById = (id: string) => FACILITIES.find((f) => f.id === id);
@@ -1113,11 +1349,18 @@ export function hoursRows(hours: WeekHours) {
   return [1, 2, 3, 4, 5, 6, 0].map((d) => ({
     day: DAY_NAMES[d],
     text: hours[d] ? `${fmtTime(hours[d]![0])} – ${fmtTime(hours[d]![1])}` : 'Closed',
-    today: d === new Date().getDay(),
+    today: d === clock.now().getDay(),
   }));
 }
 
-export function openStatus(hours: WeekHours, now = new Date()): { open: boolean; text: string } {
+/**
+ * The centre's notion of "now". Real time by default; the living-mall
+ * simulation swaps in a simulated clock so hours, crowds and events can be
+ * previewed at any time of day.
+ */
+export const clock = { now: () => new Date() };
+
+export function openStatus(hours: WeekHours, now = clock.now()): { open: boolean; text: string } {
   const today = hours[now.getDay()];
   const mins = now.getHours() * 60 + now.getMinutes();
   const toMin = (t: string) => {

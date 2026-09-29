@@ -33,6 +33,11 @@ export interface Actions {
   openFacility(id: string): void;
   openDirectory(category?: Category | 'All'): void;
   inMall(): boolean;
+  /** Adds to the cart (with a budget check). Returns false if Scout suggested alternatives instead. */
+  addToCart(id: string, option?: string): boolean;
+  toggleCompare(id: string): void;
+  inCompare(id: string): boolean;
+  askCompanion(text: string): void;
 }
 
 /** The store colour to use as an accent stripe, falling back to its accent if the main colour is near-white. */
@@ -160,15 +165,25 @@ export function productView(p: Product, a: Actions) {
     h(
       'div',
       { class: 'actions' },
+      button('Add to Cart', () => a.addToCart(p.id, selected), { icon: 'cart', variant: 'primary' }),
+      button(a.inCompare(p.id) ? 'In comparison ✓' : 'Compare', function (this: void) {
+        a.toggleCompare(p.id);
+      }, { icon: 'deals' }),
       button(
         'Buy Online',
         () =>
           toast(`Demo only: this would open the retailer’s page for ${p.name}${selected ? ` (${selected})` : ''}. Placeholder link: ${p.buyUrl}`, 6000),
-        { icon: 'cart', variant: 'primary' },
+        { variant: 'ghost' },
       ),
-      button('Take me to the store', () => a.navigate({ kind: 'store', id: s.id }, { productId: p.id }), { icon: 'route' }),
+    ),
+    h(
+      'div',
+      { class: 'actions' },
+      button('Take me to it', () => a.navigate({ kind: 'store', id: s.id }, { productId: p.id }), { icon: 'route', variant: 'ghost' }),
+      button('Find cheaper', () => a.askCompanion(`something cheaper than the ${p.name}`), { variant: 'ghost' }),
       button(`View ${s.name}`, () => a.openStore(s.id), { icon: 'store', variant: 'ghost' }),
     ),
+    h('p', { class: 'row gap wrap small' }, h('span', { class: 'pill pill-open' }, `★ ${p.rating?.toFixed(1)}`), h('span', { class: 'muted' }, `${p.reviews} demo reviews`), p.colors?.length ? h('span', { class: 'muted' }, `Colour: ${p.colors.join(', ')}`) : null),
     h('p', { class: 'muted small' }, 'Demo product with a placeholder purchase link. Prices and stock are fictional.'),
   );
 }
@@ -365,10 +380,12 @@ export interface Settings {
   reducedMotion: boolean;
   sensitivity: number;
   invertLook: boolean;
+  quality: 'auto' | 'high' | 'medium' | 'low';
+  audio: boolean;
 }
 
 export function settingsView(settings: Settings, onChange: (s: Settings) => void) {
-  const toggle = (key: 'largeText' | 'highContrast' | 'reducedMotion' | 'invertLook', label: string, desc: string) => {
+  const toggle = (key: 'largeText' | 'highContrast' | 'reducedMotion' | 'invertLook' | 'audio', label: string, desc: string) => {
     const id = `set-${key}`;
     return h(
       'div',
@@ -407,6 +424,31 @@ export function settingsView(settings: Settings, onChange: (s: Settings) => void
     toggle('reducedMotion', 'Reduce movement', 'No head-bob, animations or fly-throughs. Directions jump you to the destination instead of walking.'),
     toggle('invertLook', 'Invert vertical look', 'Swap the up/down direction when dragging to look around.'),
     h('div', { class: 'setting column' }, h('label', { for: 'set-sens' }, h('strong', {}, 'Look sensitivity')), sens),
+    h(
+      'div',
+      { class: 'setting column' },
+      h('label', { for: 'set-quality' }, h('strong', {}, 'Graphics quality'), h('span', { class: 'muted small' }, 'Auto starts high on computers and medium on phones, and lowers itself if movement gets choppy.')),
+      h(
+        'select',
+        {
+          id: 'set-quality',
+          class: 'select',
+          onchange: (e: Event) => {
+            settings.quality = (e.target as HTMLSelectElement).value as Settings['quality'];
+            onChange(settings);
+          },
+        },
+        (
+          [
+            ['auto', 'Auto (recommended)'],
+            ['high', 'High: reflections, ambient occlusion, light shafts'],
+            ['medium', 'Medium: shadows and glow'],
+            ['low', 'Low: fastest'],
+          ] as const
+        ).map(([v, t]) => h('option', { value: v, selected: settings.quality === v }, t)),
+      ),
+    ),
+    toggle('audio', 'Ambient sound', 'Soft background sound of a busy shopping centre. Off by default.'),
     h(
       'div',
       { class: 'block' },
