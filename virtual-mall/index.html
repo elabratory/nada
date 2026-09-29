@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="description" content="Virtual Mall — step inside a shopping centre from your browser. Walk around, explore stores, view products and get directions before you arrive." />
+    <title>Virtual Mall</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f59e0b'/%3E%3Cpath d='M14 26l4-10h28l4 10M14 26v22h36V26M14 26h36M27 48V36h10v12' fill='none' stroke='%230b1020' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <a class="skip-link" href="#landing-main">Skip to main content</a>
+
+    <canvas id="scene" tabindex="0" aria-label="3D view of the Harbour Central virtual shopping centre. Use W A S D to walk, arrow keys to turn and E to interact. All content is also available from the menus."></canvas>
+    <div id="fade" aria-hidden="true"></div>
+
+    <!-- ============ LANDING ============ -->
+    <div id="landing">
+      <header class="topbar">
+        <a class="logo" href="#" aria-label="Virtual Mall home">
+          <span class="logo-mark" aria-hidden="true"></span>
+          <span>Virtual Mall</span>
+        </a>
+        <nav class="topnav" aria-label="Main">
+          <button type="button" data-open="stores">Stores</button>
+          <button type="button" data-open="food">Food</button>
+          <button type="button" data-open="deals">Deals</button>
+          <button type="button" data-open="map">Map</button>
+          <button type="button" data-open="info">Hours &amp; parking</button>
+          <button type="button" data-open="access" data-icon="access" aria-label="Accessibility settings"></button>
+        </nav>
+      </header>
+
+      <main id="landing-main" class="hero">
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Now open · Harbour Central (demo centre)</p>
+        <h1>Step Inside Your Shopping&nbsp;Centre.</h1>
+        <p class="lede">Explore stores, discover products and find your way around — before you even arrive.</p>
+        <div class="cta">
+          <button id="enter-btn" type="button" class="btn primary xl">Enter Shopping Centre</button>
+          <button id="explore-btn" type="button" class="btn glass xl">Explore Stores</button>
+        </div>
+        <div id="landing-search" class="landing-search"></div>
+        <ul class="features" aria-label="What you can do">
+          <li><strong>Walk it in 3D</strong><span>Look around 360° on desktop or phone. No headset.</span></li>
+          <li><strong>Step into stores</strong><span>Browse displays, prices, sizes and stock.</span></li>
+          <li><strong>Get directions</strong><span>Follow arrows to any store, toilet or car park.</span></li>
+        </ul>
+        <nav class="cats" aria-label="Browse by category">
+          <button type="button" data-category="Fashion">Fashion</button>
+          <button type="button" data-category="Technology">Technology</button>
+          <button type="button" data-category="Food">Food</button>
+          <button type="button" data-category="Beauty">Beauty</button>
+          <button type="button" data-category="Sport">Sport</button>
+          <button type="button" data-category="Entertainment">Entertainment</button>
+        </nav>
+      </main>
+      <footer class="landing-foot">
+        Prototype. Harbour Central and every store, product, price and promotion shown here are fictional demo content.
+      </footer>
+    </div>
+
+    <!-- ============ IN-MALL HUD ============ -->
+    <div id="hud" inert aria-hidden="true">
+      <div class="hud-top">
+        <div class="where-chip">
+          <strong>Harbour Central</strong>
+          <span id="where">Main Entrance</span>
+        </div>
+        <div id="hud-search" class="hud-search"></div>
+        <button id="exit-btn" type="button" class="btn exit" data-icon="exit">Exit Virtual Mall</button>
+      </div>
+
+      <nav class="toolbar" aria-label="Mall menu">
+        <button type="button" data-open="stores" data-icon="store"><span>Stores</span></button>
+        <button type="button" data-open="food" data-icon="food"><span>Food</span></button>
+        <button type="button" data-open="deals" data-icon="deals"><span>Deals</span></button>
+        <button type="button" data-open="map" data-icon="map"><span>Map</span></button>
+        <button type="button" data-open="info" data-icon="info"><span>Info</span></button>
+        <button type="button" data-open="centre" data-icon="home"><span>Centre</span></button>
+        <button type="button" data-open="access" data-icon="access"><span>Access</span></button>
+        <button type="button" data-open="help" data-icon="help"><span>Help</span></button>
+      </nav>
+
+      <div id="store-bar" class="store-bar" hidden></div>
+      <div id="reticle" aria-hidden="true"></div>
+      <div id="prompt" class="prompt" hidden aria-hidden="true"></div>
+      <section id="route-card" class="route-card" hidden aria-label="Directions"></section>
+      <button id="minimap" type="button" class="minimap" aria-label="Open the centre map"></button>
+      <div id="joystick" class="joystick" aria-hidden="true"><div class="knob"></div></div>
+    </div>
+
+    <div id="tooltip" role="tooltip" hidden></div>
+    <div id="panel-root"></div>
+    <div id="toast" aria-hidden="true"></div>
+    <div id="live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <noscript><p class="noscript">Virtual Mall needs JavaScript to show the 3D shopping centre.</p></noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
