@@ -171,7 +171,11 @@ export function initShopping(d: ShopDeps) {
   // Voice input where the browser supports it.
   const SR = (window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec }).SpeechRecognition ??
     (window as unknown as { webkitSpeechRecognition?: new () => SpeechRec }).webkitSpeechRecognition;
-  if (SR) {
+  // Embedded pages (e.g. a sandboxed preview) may have the microphone blocked by
+  // permissions policy; only offer voice where it can actually work.
+  const policy = (document as unknown as { permissionsPolicy?: { allowsFeature(f: string): boolean }; featurePolicy?: { allowsFeature(f: string): boolean } });
+  const micAllowed = (policy.permissionsPolicy ?? policy.featurePolicy)?.allowsFeature('microphone') ?? window.self === window.top;
+  if (SR && micAllowed) {
     micBtn.hidden = false;
     micBtn.addEventListener('click', () => {
       try {
@@ -183,7 +187,11 @@ export function initShopping(d: ShopDeps) {
           input.value = text;
           send(text);
         };
-        rec.onerror = () => toast('Voice input isn’t available here. Type your message instead.');
+        rec.onerror = (ev?: { error?: string }) => {
+          const blocked = ev?.error === 'not-allowed' || ev?.error === 'service-not-allowed';
+          toast(blocked ? 'Microphone access is blocked. Allow the microphone for this site in your browser settings, or type instead.' : 'I didn’t catch that. Try again or type your message.');
+          if (blocked) micBtn.hidden = true;
+        };
         rec.start();
         toast('Listening…', 2000);
       } catch {
@@ -862,7 +870,7 @@ interface SpeechRec {
   lang: string;
   interimResults: boolean;
   onresult: (e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void;
-  onerror: () => void;
+  onerror: (ev?: { error?: string }) => void;
   start(): void;
 }
 
