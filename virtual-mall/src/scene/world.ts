@@ -867,10 +867,14 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
   // ---------- volumetric-looking light shafts under the skylights ----------
   const shaftMat = new THREE.ShaderMaterial({
     uniforms: { uColor: { value: new THREE.Color('#ffe9c8') }, uOpacity: { value: 0.07 } },
-    vertexShader: `attribute float aH; varying float vH;
-      void main() { vH = aH; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vH;
-      void main() { float a = smoothstep(0.0, 0.45, vH) * smoothstep(1.0, 0.8, vH); gl_FragColor = vec4(uColor * a * uOpacity, 1.0); }`,
+    vertexShader: `attribute float aH; varying float vH; varying float vDepth;
+      void main() { vH = aH; vec4 mv = modelViewMatrix * vec4(position, 1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    // Fade with distance so shafts seen end-on down the concourse don't pile up into glare.
+    fragmentShader: `uniform vec3 uColor; uniform float uOpacity; varying float vH; varying float vDepth;
+      void main() {
+        float a = smoothstep(0.0, 0.45, vH) * smoothstep(1.0, 0.8, vH) * (1.0 - smoothstep(8.0, 30.0, vDepth));
+        gl_FragColor = vec4(uColor * a * uOpacity, 1.0);
+      }`,
     transparent: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
@@ -997,7 +1001,7 @@ export function buildWorld(renderer: THREE.WebGLRenderer): World {
     // Without shadows the sun would light every surface indoors, so it is dimmed.
     sun.intensity = (quality === 'low' ? 1.0 : 4.2) * sunFactor;
     shafts.visible = quality === 'high' && sunFactor > 0.25;
-    shaftMat.uniforms.uOpacity.value = 0.07 * Math.min(1, sunFactor);
+    shaftMat.uniforms.uOpacity.value = 0.045 * Math.min(1, sunFactor);
     renderer.shadowMap.needsUpdate = true;
   }
 

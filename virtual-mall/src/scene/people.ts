@@ -184,6 +184,9 @@ export class People {
     this.pose(0);
   }
 
+  /** The visitor's position; shoppers won't walk through it. */
+  readonly avoid = { x: 1e9, z: 1e9 };
+
   get count() {
     return this.people.filter((p) => p.visible && p.kind === 'walker').length;
   }
@@ -221,6 +224,14 @@ export class People {
         continue;
       }
       const step = Math.min(d, p.speed * dt);
+      // Polite pedestrians: stop and turn back rather than walk through the visitor.
+      const nx = p.x + (dx / d) * 0.9;
+      const nz = p.z + (dz / d) * 0.9;
+      if (Math.hypot(nx - this.avoid.x, nz - this.avoid.z) < 0.75) {
+        p.pause = 0.6;
+        if (!p.patrol) p.targetX = THREE.MathUtils.clamp(p.x - Math.sign(dx) * (8 + Math.random() * 20), -44, 44);
+        continue;
+      }
       p.x += (dx / d) * step;
       p.z += (dz / d) * step;
       const want = Math.atan2(dx, dz);

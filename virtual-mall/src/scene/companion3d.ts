@@ -33,9 +33,11 @@ export class CompanionOrb {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 64, 64);
     this.glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-    this.glow.scale.setScalar(0.9);
+    this.glow.scale.setScalar(0.5);
+    (this.glow.material as THREE.SpriteMaterial).opacity = 0.55;
     this.group.add(this.glow, this.core, shell, this.halo, this.ring);
     this.group.traverse((o) => (o.castShadow = false));
+    this.group.scale.setScalar(0.62);
     this.group.userData.interact = { kind: 'companion', id: 'scout', label: 'Scout, your shopping companion — ask for help' };
     // A larger invisible target makes the small orb easy to click or tap.
     const hit = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
@@ -48,14 +50,14 @@ export class CompanionOrb {
   }
 
   update(dt: number, t: number, px: number, pz: number, yaw: number, reducedMotion: boolean) {
-    // Target: 1.1 m ahead, 0.75 m to the right, just below eye level.
+    // Target: ahead and to the right, a little above eye level, clear of the view centre.
     const fx = -Math.sin(yaw);
     const fz = -Math.cos(yaw);
     const rx = Math.cos(yaw);
     const rz = -Math.sin(yaw);
-    const tx = px + fx * 1.25 + rx * 0.8;
-    const tz = pz + fz * 1.25 + rz * 0.8;
-    const ty = 1.45 + (reducedMotion ? 0 : Math.sin(t * 1.7) * 0.05);
+    const tx = px + fx * 2.2 + rx * 1.25;
+    const tz = pz + fz * 2.2 + rz * 1.25;
+    const ty = 1.95 + (reducedMotion ? 0 : Math.sin(t * 1.7) * 0.05);
     if (!this.placed) {
       this.group.position.set(tx, ty, tz);
       this.placed = true;

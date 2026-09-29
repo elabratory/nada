@@ -222,3 +222,50 @@ Respect safe-area insets.
 - Ask Claude Code to **run `npm run build` after each major step**, and to test with Playwright screenshots (desktop and an iPhone viewport).
 - If the scene is slow on phones, ask it to report `renderer.info.render.calls` and reduce draw calls by merging more static geometry.
 - Next prompts to try: "Add WebXR VR mode with teleport locomotion", "Load products from a JSON file", "Add a second floor using the lifts and escalators in routing".
+
+---
+
+## Follow-up prompt: turn the MVP into an AI shopping world
+
+This is what the current version of this repo implements. Use it after the MVP prompt above:
+
+```text
+Transform the existing Virtual Mall into "an AI shopping centre you can actually explore".
+Reuse the existing world, navigation, UI panels and data. Don't rewrite them. Work in phases,
+and after each phase run `npm run build`, `npm test` and Playwright screenshots (desktop + iPhone),
+then fix what you find.
+
+PHASE 1 – Companion, missions, cart
+- Enrich products with colours, demo ratings/reviews, outfit role (top/bottom/shoes/outerwear/
+  accessory), gift flag and hobby interests (never demographic guesses). Add products the demo
+  requests need (black hoodies, jeans/chinos, phones under $800).
+- src/ai/engine.ts: an offline, deterministic companion ("Scout") that parses budgets ("under $150",
+  "$200 budget"), colours, interests, outfits, gifts, comparisons, "cheaper", "just looking",
+  facilities, events and shopping lists. Every answer is built from catalogue records only.
+  Missions pick the best combination within budget, then order stores by exact shortest walk
+  (start → stores → nearest exit).
+- A 3D companion orb that follows the player; a chat dock (log with aria-live, chips, product cards
+  with Add/View/Compare/Go, voice input where supported); a persistent cart (localStorage) with
+  a budget meter.
+PHASE 2 – Comparison, smart budget, routes, modes
+- Comparison tray (max 3) → table (price, rating, features with unique ones highlighted, colour,
+  availability, store + distance, difference) and a holographic 3D stage in front of the player.
+- Over-budget adds trigger "That X would take you $N over budget. I found … for $A and $B"
+  with swap buttons.
+- Explore / Shopping / Personal Shopper modes; Personal Shopper announces distance to the next
+  stop, arrival ("The shoes you wanted are available here"), and the next stop.
+PHASE 3 – Living mall, events, discovery, plan before you go
+- A simulated clock (live or preview, fast-forward) drives sun direction/colour, skylight colour,
+  day/night light levels, crowds, weather (rain seen through the entrances), opening hours (shutters,
+  blocked doors, closing-soon notices) and scheduled events with 3D set-pieces and ad takeovers.
+- Discovery uses only budget, chosen categories, items viewed in the session, promotions, events.
+- A "Shop before you go" planner that produces a timed itinerary you can save and copy.
+PHASE 4 – Digital twin + WebXR
+- CentreDataSource / LiveFeed / InventoryFeed interfaces with provenance; a demo source and a
+  validated JSON source; an export script; tests for the validator.
+- A feature-detected WebXR mode (camera rig, teleport, thumbstick move, snap turn, controller
+  selection with a world-space info card). Post-processing is skipped in XR.
+Also: graphics quality tiers (GTAO, bloom, planar floor reflections, sun shadows through
+skylights, light shafts) with auto-downgrade; instanced, animated people; security guards/desk/CCTV.
+Never present demo data as real.
+```

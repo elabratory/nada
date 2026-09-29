@@ -74,6 +74,21 @@ export class Pipeline {
       composer.addPass(new RenderPass(this.world.scene, this.camera));
       if (q === 'high') {
         const ao = new GTAOPass(this.world.scene, this.camera, this.w, this.h);
+        // AO must only see solid surfaces: hide glass, light shafts, glows and
+        // helpers while it renders its depth/normal buffer.
+        const internals = ao as unknown as { _overrideVisibility(): void; _visibilityCache: THREE.Object3D[] };
+        const base = internals._overrideVisibility.bind(ao);
+        internals._overrideVisibility = () => {
+          base();
+          this.world.scene.traverse((o) => {
+            const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+            if (!o.visible || !m || Array.isArray(m)) return;
+            if (m.transparent || !m.depthWrite || m.blending === THREE.AdditiveBlending) {
+              o.visible = false;
+              internals._visibilityCache.push(o);
+            }
+          });
+        };
         ao.updateGtaoMaterial({ radius: 0.7, distanceExponent: 1.4, thickness: 1.2, scale: 1.0, samples: 12 });
         ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
         ao.blendIntensity = 0.85;

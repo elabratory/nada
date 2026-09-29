@@ -2448,3 +2448,42 @@ body[data-mode='explore'] .compare-tray {
     overflow: visible;
   }
 }
+@media (max-width: 860px) {
+  .mode-switch,
+  .cart-chip {
+    top: calc(var(--hud-top) + 162px);
+  }
+  .mission-bar,
+  #toast {
+    top: calc(var(--hud-top) + 210px);
+  }
+  .store-bar,
+  .compare-tray {
+    top: calc(var(--hud-top) + 258px);
+  }
+  .compare-tray {
+    bottom: auto;
+  }
+}
+@media (max-width: 860px) {
+  .toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: calc(100vw - 172px);
+    scrollbar-width: none;
+  }
+  .toolbar button {
+    flex: none;
+  }
+  .companion-fab {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+  }
+  .route-card {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 140px);
+  }
+}
+@media (max-width: 860px) {
+  .toolbar {
+    justify-content: flex-start;
+  }
+}

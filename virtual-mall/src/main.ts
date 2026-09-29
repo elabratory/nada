@@ -447,6 +447,10 @@ function enterMall(after?: () => void) {
     canvas.focus({ preventScroll: true });
     const first = !store.get('vm-help-seen');
     announce(`You are in ${CENTRE.name}. ${areaAt(player.x, player.z).label}.`);
+    if (previewNotice) {
+      toast(previewNotice, 6000);
+      previewNotice = '';
+    }
     if (first && !after) openHelp();
     after?.();
   };
@@ -688,6 +692,12 @@ live.addEventListener('closing', (ev) => {
   if (inMall()) toast(`${st.name} closes in ${minutes} minutes.`);
   if (shop && shop.mode !== 'explore' && inMall()) shop.say(`Heads up: ${st.name} closes in ${minutes} minutes.`);
 });
+// Outside trading hours, preview late morning rather than showing a shut centre.
+let previewNotice = '';
+if (!live.isOpen('stride') && !live.isOpen('orchard')) {
+  live.setPreview(11);
+  previewNotice = 'The centre is closed right now, so you’re previewing it at 11 am. Change the time in What’s on.';
+}
 applyAmbience(true);
 applyStores();
 applyEvent(false);
@@ -912,6 +922,10 @@ function tick(now?: number) {
     }
   }
 
+  if (world && mode === 'mall') {
+    world.people.avoid.x = player.x;
+    world.people.avoid.z = player.z;
+  }
   world?.update(dt, t, rm);
   shop?.update(dt, t, window.innerWidth, window.innerHeight);
   live.tick(rawDt);
