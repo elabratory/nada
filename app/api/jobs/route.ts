@@ -1,17 +1,12 @@
 import { z } from "zod";
+import { OptionsSchema } from "@/lib/http";
 import { createJob, getVideo } from "@/lib/jobs";
 import { isValidId } from "@/lib/storage";
-import { CLIP_STYLES, FRAMINGS } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const Body = z.object({
-  videoId: z.string().refine(isValidId),
-  count: z.union([z.literal(3), z.literal(5), z.literal(10)]),
-  style: z.enum(CLIP_STYLES),
-  framing: z.enum(FRAMINGS).default("speaker"),
-});
+const Body = OptionsSchema.extend({ videoId: z.string().refine(isValidId) });
 
 export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));

@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 export const STORAGE_ROOT = path.join(process.cwd(), "storage");
 export const UPLOADS_DIR = path.join(STORAGE_ROOT, "uploads");
 export const JOBS_DIR = path.join(STORAGE_ROOT, "jobs");
-export const FONTS_DIR = path.join(process.cwd(), "assets", "fonts");
+export const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
 
 const ID_RE = /^[a-z0-9]{8,40}$/;
 

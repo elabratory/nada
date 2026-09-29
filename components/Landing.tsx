@@ -19,8 +19,23 @@ const CARDS = [
   { words: ["WAIT", "FOR", "IT"], hi: 2, r: "6deg", tint: "from-[#2f2a3a] to-[#121015]" },
 ];
 
-export default function Landing({ onPick }: { onPick: (file: File) => void }) {
+/** Pulls every http(s) link out of pasted text (one per line, or separated by spaces). */
+export function extractLinks(text: string): string[] {
+  return [...new Set(text.match(/https?:\/\/[^\s<>"']+/g) ?? [])];
+}
+
+export default function Landing({
+  onPick,
+  onLinks,
+  ytdlp,
+}: {
+  onPick: (file: File) => void;
+  onLinks: (urls: string[]) => void;
+  ytdlp: boolean | null;
+}) {
   const [drag, setDrag] = useState(false);
+  const [text, setText] = useState("");
+  const links = extractLinks(text);
 
   const openPicker = () => {
     const input = document.createElement("input");
@@ -64,10 +79,44 @@ export default function Landing({ onPick }: { onPick: (file: File) => void }) {
             <span className="font-serif font-normal italic tracking-[-0.01em] text-ember">viral</span> short clips.
           </h1>
           <p className="mt-6 max-w-xl text-lg text-white/65 sm:text-xl animate-rise [animation-delay:120ms]">
-            Upload a video and let AI find the best moments.
+            Paste a link or upload a video. AI finds the best moments, scores them, writes the titles and cuts ranked 9:16 clips.
           </p>
-          <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center animate-rise [animation-delay:180ms]">
-            <Button size="lg" onClick={openPicker}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (links.length) onLinks(links);
+            }}
+            className="mt-10 max-w-2xl animate-rise [animation-delay:180ms]"
+          >
+            <div className="flex flex-col gap-2 rounded-[22px] border border-line bg-coal p-2 focus-within:border-ember/60 sm:flex-row sm:items-start">
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (links.length) onLinks(links);
+                  }
+                }}
+                rows={Math.min(5, Math.max(1, text.split("\n").length))}
+                placeholder="Paste a video link — YouTube, TikTok, a direct .mp4… (several links = one video each)"
+                aria-label="Video link"
+                spellCheck={false}
+                className="min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-[16px] leading-6 outline-none placeholder:text-white/35"
+              />
+              <Button size="md" type="submit" disabled={!links.length} className="!h-12 shrink-0">
+                {Icon.spark}
+                {links.length > 1 ? `Process ${links.length} links` : "Fetch video"}
+              </Button>
+            </div>
+            {ytdlp === false && (
+              <p className="mt-2 px-2 text-[13px] text-mute">
+                Direct video links work now. For YouTube/TikTok/Instagram links, run <code className="text-white/75">npm run setup:ytdlp</code> once and restart.
+              </p>
+            )}
+          </form>
+          <div className="mt-5 flex flex-col items-start gap-4 sm:flex-row sm:items-center animate-rise [animation-delay:220ms]">
+            <Button size="lg" variant="outline" onClick={openPicker}>
               {Icon.upload}
               Upload Video
             </Button>
@@ -124,9 +173,9 @@ export default function Landing({ onPick }: { onPick: (file: File) => void }) {
 
       <section className="mx-auto grid max-w-6xl gap-3 px-5 pb-20 sm:grid-cols-3 sm:px-8">
         {[
-          ["01", "Upload", "Drop in a podcast, interview, stream or lecture."],
-          ["02", "AI finds the moments", "Transcribed and read end-to-end for hooks, humour and complete thoughts."],
-          ["03", "Download clips", "9:16 vertical, speaker in frame, captions burned in."],
+          ["01", "Paste or upload", "A link to a podcast, stream, interview or vlog — or the file itself."],
+          ["02", "AI finds & scores the moments", "Speech, reactions, audio energy, scene changes and visuals combined into a 0–100 viral score."],
+          ["03", "Ranked, titled 9:16 clips", "Hook → context → payoff cuts, centred titles, subtitles, and a #N → #1 countdown."],
         ].map(([n, t, d]) => (
           <div
             key={n}

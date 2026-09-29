@@ -101,3 +101,33 @@ body::before {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Same font files the exporter burns into the video, so the live preview matches the MP4. */
+@font-face {
+  font-family: "ClipFont";
+  src: url("/fonts/Montserrat_500Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "ClipFont";
+  src: url("/fonts/Montserrat_700Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "ClipFont";
+  src: url("/fonts/Montserrat_800ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-display: block;
+}
+@font-face {
+  font-family: "ClipFont";
+  src: url("/fonts/Montserrat_900Black.ttf") format("truetype");
+  font-weight: 900;
+  font-display: block;
+}
+
+input[type="range"] {
+  accent-color: var(--color-ember);
+}

@@ -15,6 +15,8 @@ interface RunOptions {
   /** Expected output duration in seconds, used to compute progress. */
   duration?: number;
   onProgress?: (fraction: number) => void;
+  /** Called with every complete stderr line (for filters that log per-frame analysis). */
+  onLine?: (line: string) => void;
 }
 
 /** Runs ffmpeg and resolves with its stderr. Rejects with the tail of stderr on failure. */
@@ -25,9 +27,15 @@ export function runFfmpeg(args: string[], opts: RunOptions = {}): Promise<string
       stdio: ["ignore", "ignore", "pipe"],
     });
     let stderr = "";
+    let partial = "";
     proc.stderr.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       stderr += text;
+      if (opts.onLine) {
+        const lines = (partial + text).split(/\r?\n|\r/);
+        partial = lines.pop() ?? "";
+        for (const l of lines) opts.onLine(l);
+      }
       if (stderr.length > 200_000) stderr = stderr.slice(-100_000);
       if (opts.onProgress && opts.duration) {
         const matches = [...text.matchAll(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/g)];
@@ -42,6 +50,7 @@ export function runFfmpeg(args: string[], opts: RunOptions = {}): Promise<string
       reject(new Error(`Could not start FFmpeg (${ffmpegPath()}): ${err.message}`));
     });
     proc.on("close", (code) => {
+      if (partial && opts.onLine) opts.onLine(partial);
       if (code === 0) resolve(stderr);
       else {
         const tail = stderr.trim().split("\n").slice(-8).join("\n");

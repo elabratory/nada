@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "check": "node scripts/check-setup.mjs"
+    "check": "node scripts/check-setup.mjs",
+    "setup:ytdlp": "node scripts/install-ytdlp.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

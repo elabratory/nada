@@ -26,7 +26,7 @@ You can also edit `.env.local` by hand (`cp .env.example .env.local`):
 | Variable            | Used for                                                                                                 | Get it                                         |
 | ------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `OPENAI_API_KEY`    | Speech-to-text with word-level timestamps (Whisper, `whisper-1`)                                          | https://platform.openai.com/api-keys           |
-| `ANTHROPIC_API_KEY` | Analysing the transcript to pick the best moments + locating the speaker in frame (Claude, `claude-opus-5`) | https://console.anthropic.com/settings/keys    |
+| `ANTHROPIC_API_KEY` | Analysing the transcript to pick the best moments + locating the speaker in frame (Claude, `claude-opus-5-5`) | https://console.anthropic.com/settings/keys    |
 
 Optional: `CLAUDE_MODEL` to override the model, `FFMPEG_PATH` to use your own FFmpeg (it must include libass).
 

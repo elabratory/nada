@@ -1,18 +1,14 @@
 import { z } from "zod";
+import { isLocal } from "@/lib/http";
+import { findYtDlp } from "@/lib/importer";
 import { keyStatus, saveKeys } from "@/lib/settings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Only the machine running ClipForge may change its keys.
-function isLocal(req: Request): boolean {
-  const host = (req.headers.get("host") ?? "").replace(/:\d+$/, "");
-  return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(host);
-}
-
-/** Reports which keys are configured — never the keys themselves. */
+/** Reports which keys are configured — never the keys themselves — and whether yt-dlp is available. */
 export async function GET() {
-  return Response.json(keyStatus(), { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ ...keyStatus(), ytdlp: Boolean(await findYtDlp()) }, { headers: { "Cache-Control": "no-store" } });
 }
 
 const Key = z
@@ -28,6 +24,7 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
+  // Only the machine running ClipForge may change its keys.
   if (!isLocal(req)) {
     return Response.json(
       { error: "Keys can only be changed from the computer running ClipForge (localhost)." },
