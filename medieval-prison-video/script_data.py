@@ -26,8 +26,8 @@ PROMPTS = {
                   "old St Paul's cathedral with tall spire, river Thames, morning mist" + OUT, 11),
     "market": ("busy medieval market street, crowd in wool tunics and hoods, wooden stalls with bread "
                "and cloth, muddy ground, timber-framed houses" + OUT, 12),
-    "purse_cut": ("close-up of a leather purse hanging from a belt with its cords freshly cut by a small knife, "
-                  "medieval market crowd blurred behind" + OUT, 13),
+    "purse_cut": ("close-up of a small medieval drawstring pouch of rough leather hanging from a rope belt on a wool tunic, "
+                  "its cord sliced by a thief's small knife, medieval market crowd blurred behind" + OUT, 13),
     "pointing": ("angry medieval townswoman pointing her finger accusingly, crowd turning to look, market street, "
                  "wool hoods and tunics" + OUT, 14),
     "hero_shock": ("close-up portrait of a " + HERO + ", shocked frightened expression, medieval market street "
@@ -70,16 +70,16 @@ PROMPTS = {
                 "candlelight", 35),
     "debtor": ("a wealthy medieval merchant in a fur-trimmed blue gown pointing at a ledger while a "
                "shamefaced debtor is led away by a sergeant" + OUT, 36),
-    "bread_water": ("still life on a stone ledge: a small loaf of coarse brown bread and a clay cup of water, "
-                    "prison cell, cold light from a slit window", 37),
+    "bread_water": ("still life on a stone ledge: a small loaf of coarse brown bread and a rough wooden bowl of water, "
+                    "medieval prison cell, cold light from a narrow slit window", 37),
     "rich_purse": ("close-up of a jewelled hand holding a heavy leather purse full of coins, rich velvet sleeve, "
                    "candlelight", 38),
-    "rich_prisoner": ("a well-dressed medieval merchant prisoner in a private chamber with a bed, a candle, "
-                      "a writing desk and a meal, comfortable" + IN, 39),
+    "rich_prisoner": ("a wealthy 14th century merchant in a long fur-lined gown and hood, a prisoner in a private stone chamber "
+                      "with a curtained bed, a candle and a meal on a table, comfortable" + IN, 39),
     "ludgate": ("medieval stone city gatehouse on a hill street, statues in niches, Ludgate London, "
                 "cathedral spire behind" + OUT, 40),
-    "pushed_in": ("a " + KEEPER + " shoving a " + HERO + " through a low stone doorway into darkness, "
-                  "torchlight" + IN, 104),
+    "pushed_in": ("a " + KEEPER + " shoving a young " + HERO + " through a low stone doorway into darkness, "
+                  "torchlight" + IN, 204),
 
     # --- chapter 2
     "pov_corridor": ("first person view walking down a narrow low stone passage, a gaoler ahead holding a torch, "
@@ -98,15 +98,16 @@ PROMPTS = {
     "dark_figures": ("dark crowded medieval cell, prisoners huddled against the walls, one praying, one coughing, "
                      "faces lit by a single torch" + IN, 47),
     "chains_floor": ("close-up of heavy iron chains dragging across a stone floor, rusty links, straw" + IN, 48),
-    "ankle_iron": ("close-up of a gaoler's hands locking a heavy iron ring around a man's bare dirty ankle, "
-                   "chain attached, stone floor" + IN, 49),
+    "ankle_iron": ("close-up of a heavy rusted iron fetter clamped around a man's bare dirty ankle, thick chain running across "
+                   "a stone floor with straw, torchlight", 149),
     "keeper_grin": ("portrait of a " + KEEPER + ", sly greedy smile, holding out his palm for payment, "
                     "torchlight" + IN, 106),
     "hero_sits": ("a " + HERO + ", sitting on straw against a stone prison wall, knees drawn up, exhausted, "
                   "iron ring on his ankle" + IN, 107),
 
     # --- chapter 3
-    "empty_bowl": ("close-up of an empty wooden bowl on a prison floor, a few crumbs, straw, cold light" + IN, 51),
+    "empty_bowl": ("close-up of an empty cracked wooden bowl lying on a straw-covered stone prison floor, a few crumbs, "
+                   "dim grey light from above", 151),
     "keeper_ledger": ("a " + KEEPER + ", counting coins at a rough table beside a tally stick and a candle, "
                       "prison office" + IN, 108),
     "bed_room": ("a crude wooden bed with a straw mattress in a small stone room of a medieval prison, a "
@@ -122,16 +123,16 @@ PROMPTS = {
               "stall, baker looking worried" + OUT, 56),
     "bread_basket": ("a basket of confiscated bread loaves being carried through the dark doorway of a medieval "
                      "prison by an officer" + IN, 57),
-    "grab_bread": ("hungry ragged medieval prisoners reaching out for loaves of bread in a dark prison, "
-                   "desperate hands" + IN, 58),
+    "grab_bread": ("two hungry ragged medieval prisoners in a dark cell tearing a loaf of bread apart, desperate faces, "
+                   "torchlight" + IN, 158),
     "hero_hungry": ("close-up portrait of a " + HERO + ", hollow cheeks, hungry exhausted eyes, prison "
                     "torchlight" + IN, 110),
     "empty_corner": ("an empty corner of a medieval prison cell, flattened straw, an overturned empty bowl, "
                      "a beam of cold light, nobody there", 59),
 
     # --- chapter 4
-    "crowd_overhead": ("overhead view looking down into a packed medieval prison room, dozens of prisoners lying "
-                       "and sitting on straw, chains" + IN, 61),
+    "crowd_overhead": ("high angle shot looking down on a crowded medieval prison cell, twenty ragged men and women sitting "
+                       "and lying close together on straw, chains, torchlight" + IN, 161),
     "water_bucket": ("close-up of a wooden bucket of murky brown water in a prison cell, scum floating, "
                      "a tin cup" + IN, 62),
     "rat": ("close-up of a brown rat sniffing through straw beside a crust of bread, stone prison floor" + IN, 63),
@@ -156,14 +157,14 @@ PROMPTS = {
                   "carts passing below" + OUT, 74),
     "tower": ("the White Tower of the Tower of London in the 14th century, pale stone keep with four turrets, "
               "curtain walls, river Thames" + OUT, 75),
-    "stocks": ("medieval village green, a labourer sitting locked in wooden stocks by his ankles, villagers "
-               "watching, thatched cottages" + OUT, 77),
+    "stocks": ("a peasant sitting on the ground with both ankles locked in medieval wooden stocks, a heavy timber board "
+               "with two leg holes on posts, village green, thatched cottages, villagers watching" + OUT, 177),
     "keys_hook": ("close-up of a ring of large iron keys hanging on a hook on a stone wall, torchlight" + IN, 78),
 
     # --- chapter 6
-    "hero_eyes": ("extreme close-up of the eyes of a " + HERO + ", determined, glancing up, prison torchlight" + IN, 111),
-    "tower_night": ("the White Tower of the Tower of London at night, moonlight, torches on the walls, "
-                    "river mist", 81),
+    "hero_eyes": ("extreme close-up of the face of a young " + HERO + ", determined eyes glancing up, prison torchlight" + IN, 211),
+    "tower_night": ("the pale stone White Tower keep of the Tower of London at night, lit only by moonlight and burning "
+                    "torches on the battlements, river mist, medieval", 181),
     "feast": ("a medieval bishop in rich robes toasting drunk laughing guards at a feast table in a torchlit "
               "stone chamber, wine jugs" + IN, 82),
     "rope_wall": ("a rope hanging from a high narrow window down the pale stone wall of a castle keep at "
@@ -190,8 +191,8 @@ PROMPTS = {
     # --- chapter 7
     "hero_waiting": ("a " + HERO + ", sitting alone in a prison cell as a beam of light from a slit window "
                      "falls across the floor, waiting" + IN, 114),
-    "justices": ("royal justices in scarlet robes and coifs riding on horseback into a medieval English town "
-                 "with an escort, townsfolk watching" + OUT, 91),
+    "justices": ("two bareheaded grey-haired royal judges in long scarlet robes riding brown horses along a muddy "
+                 "medieval English town street, mounted escort, townsfolk watching from doorways" + OUT, 301),
     "court_empty": ("an empty medieval courtroom in a stone hall, judges' bench and benches empty, "
                     "dust in shafts of light", 92),
     "approver": ("a sly prisoner whispering names to a " + CLERK + " who writes on parchment in a prison, "
@@ -209,8 +210,8 @@ PROMPTS = {
     # --- finale
     "hero_back_light": ("view from behind of a " + HERO + ", standing in a dark cell facing a single beam of "
                         "daylight from a high window" + IN, 116),
-    "empty_purse": ("close-up of an empty flat leather purse turned inside out on a stone floor, straw, "
-                    "torchlight" + IN, 98),
+    "empty_purse": ("close-up of an empty small drawstring pouch of rough worn leather lying open and flat on straw on a stone "
+                    "prison floor, torchlight" + IN, 198),
     "open_ring": ("an open empty iron shackle lying on straw on a prison floor, cold morning light", 99),
     "castle_banners": ("romantic medieval castle with colourful banners flying in golden sunset light, "
                        "green hills, knights riding" , 100),
