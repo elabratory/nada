@@ -1,0 +1,9 @@
+build/
+models/
+assets/raw/pv_*
+*.tmp
+__pycache__/
+preview.mp4
+narration_preview.mp3
+voice_samples/
+assets/img/
