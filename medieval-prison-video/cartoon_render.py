@@ -7,6 +7,8 @@ from cartoon import W, H, text, PAL, INK, rgb, rrect, fill_stroke
 import scenes
 from script_data import SEGMENTS
 FPS = 24
+# bottom-left labels, only where the scene itself does not already show the same words
+LABELS = {"s49": "London, 1419", "s55": "York Castle", "s57": "The Tower of London", "s84": "Nottingham, 1357", "s64": "Tower of London"}
 
 def placeholder(ctx, t, p, key):
     ctx.set_source_rgb(*PAL["cream"]); ctx.paint()
@@ -21,25 +23,31 @@ def draw_frame(ctx, t, shots, seg_times):
     # gentle camera push on every shot
     z = 1.0 + 0.05 * p
     ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2)
+    scenes.CUR["seg"] = s["seg"]["id"]
     fn = scenes.SCENES.get(key.replace("card:", "card_"))
     if fn: fn(ctx, t, p)
     else: placeholder(ctx, t, p, key)
     ctx.restore()
-    # chapter titles + labels in handwriting
+    # chapter title cards + selected labels
     for seg in SEGMENTS:
         st = seg_times.get(seg["id"])
         if not st: continue
         t0, t1, _ = st
-        if seg.get("chapter") and t0 <= t <= t0 + 3.2:
-            a = min(1, (t - t0) / 0.3, (t0 + 3.2 - t) / 0.3)
+        if seg.get("chapter") and t0 <= t <= t0 + 2.6:
+            a = min(1, (t - t0) / 0.25, (t0 + 2.6 - t) / 0.35)
+            pop = 0.85 + 0.15 * min(1, (t - t0) / 0.3)
+            ctx.set_source_rgba(0.08, 0.06, 0.05, 0.6 * a); ctx.paint()
             ctx.push_group()
-            rrect(ctx, 80, 60, 760, 170, 24); fill_stroke(ctx, PAL["white"], 6)
-            text(ctx, "Chapter " + seg["chapter"][0], 130, 125, 60, PAL["scarlet"], align="left")
-            text(ctx, seg["chapter"][1].title().replace("'S", "'s").replace("'T", "'t"), 130, 205, 80, INK, align="left")
+            ctx.translate(W / 2, H / 2); ctx.scale(pop, pop); ctx.translate(-W / 2, -H / 2)
+            rrect(ctx, W / 2 - 560, H / 2 - 190, 1120, 380, 40); fill_stroke(ctx, PAL["white"], 8)
+            text(ctx, "Chapter " + seg["chapter"][0], W / 2, H / 2 - 60, 80, PAL["scarlet"])
+            title = " ".join(w[:1] + w[1:].lower() for w in seg["chapter"][1].split())
+            text(ctx, title, W / 2, H / 2 + 100, 120, INK)
             ctx.pop_group_to_source(); ctx.paint_with_alpha(a)
-        if seg.get("text_overlay") and t0 + 0.3 <= t <= min(t1, t0 + 4.5) and seg["id"] != "s01":
+        lbl = LABELS.get(seg["id"])
+        if lbl and t0 + 0.3 <= t <= min(t1, t0 + 4.5):
             a = min(1, (t - t0 - 0.3) / 0.3, (min(t1, t0 + 4.5) - t) / 0.3)
-            ctx.push_group(); text(ctx, seg["text_overlay"].title(), 140, H - 90, 80, PAL["white"], align="left", outline=INK)
+            ctx.push_group(); text(ctx, lbl, 120, H - 80, 72, PAL["white"], align="left", outline=INK)
             ctx.pop_group_to_source(); ctx.paint_with_alpha(a)
     # fade in/out of whole film
     total = shots[-1]["t1x"]

@@ -285,7 +285,7 @@ def mix():
     for tt in np.arange(20, total, 17.0):
         i = int(tt * SR)
         if ext_mask[i] < 0.5:
-            c = (sfx_chains() if (int(tt) // 17) % 2 else sfx_drip()) * 0.35
+            c = (sfx_chains() if (int(tt) // 17) % 2 else sfx_drip()) * 0.15
             fx[i:i + len(c)] += c[:n - i]
     # cued SFX
     SFX = {"chains": sfx_chains, "keys": sfx_keys, "coins": sfx_coins, "clank": sfx_clank, "lock": sfx_lock,
@@ -306,11 +306,11 @@ def mix():
     music = music_bed(total, sections)[:n]
     # sidechain duck under narration
     vo_env = uniform_filter1d(np.abs(vo), int(0.25 * SR))
-    duck = 1 - 0.55 * np.clip(vo_env / 0.03, 0, 1)
+    duck = 1 - 0.65 * np.clip(vo_env / 0.03, 0, 1)
     music *= duck[:, None]; amb *= (0.55 + 0.45 * duck)[:, None]
     vo = hp(vo, 70)
     vo_st = verb(vo, IR_VOICE, 0.10)[:n] * math.sqrt(2)
-    master = vo_st * 1.0 + music * 0.45 + amb * 0.9 + fx * 0.8
+    master = vo_st * 1.0 + music * 0.30 + amb * 0.35 + fx * 0.5
     fade = np.minimum(1, np.arange(n) / SR / 0.5) * np.clip((total + 0.5 - np.arange(n) / SR) / 1.5, 0, 1)
     master *= fade[:, None]
     import soundfile as sf

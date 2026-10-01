@@ -39,7 +39,7 @@ def wobble(seed, t, amp=1.0, f=1.0):
     return amp * math.sin(t * f * 2 * math.pi + seed * 1.7)
 
 # ------------------------------------------------------------------ text
-def text(ctx, s, x, y, size=90, col=INK, font="Gochi Hand", align="center", outline=None, angle=0.0):
+def text(ctx, s, x, y, size=90, col=INK, font="Itim", align="center", outline=None, angle=0.0):
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle)
     ctx.select_font_face(font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL); ctx.set_font_size(size)
     ext = ctx.text_extents(s)
@@ -89,7 +89,7 @@ class Char:
         shoulders = [(-bw_top / 2 + 8, yt + 34), (bw_top / 2 - 8, yt + 34)]
         hands = []
         for i, (sx, sy) in enumerate(shoulders):
-            ang = math.radians(arms[i]) if i == 1 else math.radians(arms[i])
+            ang = math.radians(arms[i] + 5 * math.sin(t * 1.4 + self.seed + i * 2.1))
             L = 82
             hx, hy = sx + L * math.cos(ang), sy + L * math.sin(ang)
             hands.append((sx, sy, hx, hy))
@@ -124,9 +124,9 @@ class Char:
         if self.beard:
             bc_ = PAL.get(self.beard, self.beard) if isinstance(self.beard, str) else self.beard
             ctx.new_path(); ctx.arc(0, hy0, R, math.pi * 0.08, math.pi * 0.92)
-            ctx.curve_to(-R * 0.75, hy0 + R * 0.62, -R * 0.4, hy0 + R * 0.62, -R * 0.3, hy0 + R * 0.62)
-            ctx.curve_to(-R * 0.2, hy0 + R * 0.3, R * 0.2, hy0 + R * 0.3, R * 0.3, hy0 + R * 0.62)
-            ctx.curve_to(R * 0.4, hy0 + R * 0.62, R * 0.75, hy0 + R * 0.62, R * math.cos(math.pi * 0.08), hy0 + R * math.sin(math.pi * 0.08))
+            ctx.curve_to(-R * 0.8, hy0 + R * 0.45, -R * 0.55, hy0 + R * 0.62, -R * 0.35, hy0 + R * 0.66)
+            ctx.curve_to(-R * 0.2, hy0 + R * 0.56, R * 0.2, hy0 + R * 0.56, R * 0.35, hy0 + R * 0.66)
+            ctx.curve_to(R * 0.55, hy0 + R * 0.62, R * 0.8, hy0 + R * 0.45, R * math.cos(math.pi * 0.08), hy0 + R * math.sin(math.pi * 0.08))
             ctx.close_path(); fill_stroke(ctx, bc_, 4)
         hat(ctx, self.hat, 0, hy0, R)
         face_draw(ctx, 0, hy0, R, expr, t, self.seed, look, talk, eyes, beard=bool(self.beard))
@@ -156,7 +156,7 @@ def face_draw(ctx, cx, cy, R, expr, t, seed, look, talk, eyes, beard=False):
         by = y - 24 - bhgt
         dx, dy = 15 * math.cos(ang * side * -1), 15 * math.sin(ang * side * -1) * side
         line(ctx, [(x - 15, by + (ang * 22 * side if side < 0 else -ang * 22)), (x + 15, by - (ang * 22 * side if side < 0 else -ang * 22))], 6)
-    my = cy + R * 0.42
+    my = cy + R * (0.36 if beard else 0.42)
     open_ = talk and (math.sin(t * 22) > 0)
     if open_ and mouth in ("flat", "frown", "smile", "smirk", "wavy"):
         mouth = "talk"
@@ -286,7 +286,7 @@ def ground(ctx, y, col=PAL["mud"], puddles=True, seed=2):
     ctx.rectangle(-200, y, W + 400, H - y + 200); fill_stroke(ctx, col, 5)
     r = random.Random(seed)
     if puddles:
-        for k in range(4):
+        for k in range(2):
             px, py = r.random() * W, y + 40 + r.random() * (H - y - 80)
             ctx.new_path(); ctx.save(); ctx.translate(px, py); ctx.scale(3.2, 1); ctx.arc(0, 0, 28 + r.random() * 20, 0, 2 * math.pi); ctx.restore()
             fill_stroke(ctx, rgb("8fa4ad"), 3)
@@ -294,23 +294,99 @@ def ground(ctx, y, col=PAL["mud"], puddles=True, seed=2):
         px, py = r.random() * W, y + 20 + r.random() * (H - y)
         line(ctx, [(px, py), (px + 22, py + 2)], 3, rgb("5f4630"))
 
-def house(ctx, x, y_base, w, h, roof=PAL["red"], wall=PAL["cream"], seed=0):
-    ctx.rectangle(x, y_base - h, w, h); fill_stroke(ctx, wall)
-    for k in range(1, 3): line(ctx, [(x, y_base - h * k / 3), (x + w, y_base - h * k / 3)], 6, PAL["wood_d"])
-    line(ctx, [(x + w / 2, y_base - h), (x + w / 2, y_base)], 6, PAL["wood_d"])
-    line(ctx, [(x, y_base - h), (x + w / 2, y_base - h / 3)], 5, PAL["wood_d"])
-    ctx.new_path(); ctx.move_to(x - 20, y_base - h); ctx.line_to(x + w / 2, y_base - h - w * 0.55); ctx.line_to(x + w + 20, y_base - h); ctx.close_path(); fill_stroke(ctx, roof)
-    rrect(ctx, x + w * 0.62, y_base - h * 0.3, w * 0.22, h * 0.3, 6); fill_stroke(ctx, PAL["wood"])
-    rrect(ctx, x + w * 0.14, y_base - h * 0.62, w * 0.2, h * 0.16, 4); fill_stroke(ctx, rgb("3d4a57"))
+def house(ctx, x, y_base, w, h, roof=PAL["red"], wall=PAL["cream"], seed=0, t=0.0, sign=False):
+    r = random.Random(seed)
+    h1 = h * 0.45                     # ground floor
+    over = 18                         # jettied upper storey overhang
+    beam = PAL["wood_d"]
+    # ground floor
+    ctx.rectangle(x, y_base - h1, w, h1); fill_stroke(ctx, wall)
+    door_w = w * 0.26
+    dx = x + w * (0.12 if r.random() < 0.5 else 0.62)
+    ctx.new_path(); ctx.move_to(dx, y_base); ctx.line_to(dx, y_base - h1 * 0.62); ctx.arc(dx + door_w / 2, y_base - h1 * 0.62, door_w / 2, math.pi, 0)
+    ctx.line_to(dx + door_w, y_base); ctx.close_path(); fill_stroke(ctx, PAL["wood"])
+    line(ctx, [(dx + door_w / 2, y_base - h1 * 0.62 - door_w / 2 + 6), (dx + door_w / 2, y_base)], 3, beam)
+    wx = x + w * (0.62 if dx < x + w * 0.4 else 0.14)
+    rrect(ctx, wx, y_base - h1 * 0.75, w * 0.22, h1 * 0.36, 4); fill_stroke(ctx, rgb("3d4a57"))
+    line(ctx, [(wx + w * 0.11, y_base - h1 * 0.75), (wx + w * 0.11, y_base - h1 * 0.39)], 3, beam)
+    # upper storey (wider) with timber framing
+    uy0, uy1 = y_base - h, y_base - h1
+    ctx.rectangle(x - over, uy0, w + 2 * over, uy1 - uy0); fill_stroke(ctx, wall)
+    line(ctx, [(x - over, uy1), (x + w + over, uy1)], 9, beam)
+    n = 3
+    for k in range(n + 1):
+        px = x - over + k * (w + 2 * over) / n
+        line(ctx, [(px, uy0), (px, uy1)], 6, beam)
+    for k in range(n):
+        ax = x - over + k * (w + 2 * over) / n; bx = ax + (w + 2 * over) / n
+        if (k + int(seed * 10)) % 2: line(ctx, [(ax, uy1), (bx, uy0 + (uy1 - uy0) * 0.45)], 5, beam)
+        else:
+            wxx = ax + (bx - ax) * 0.22
+            rrect(ctx, wxx, uy0 + (uy1 - uy0) * 0.25, (bx - ax) * 0.56, (uy1 - uy0) * 0.42, 4); fill_stroke(ctx, rgb("3d4a57"))
+            # shutters gently swinging
+            sw = 0.5 + 0.08 * math.sin(t * 1.3 + seed * 7)
+            for side in (0, 1):
+                sx0 = wxx if side == 0 else wxx + (bx - ax) * 0.56
+                ctx.new_path(); ctx.move_to(sx0, uy0 + (uy1 - uy0) * 0.25)
+                ctx.line_to(sx0 + (-1 if side == 0 else 1) * (bx - ax) * 0.2 * sw, uy0 + (uy1 - uy0) * 0.27)
+                ctx.line_to(sx0 + (-1 if side == 0 else 1) * (bx - ax) * 0.2 * sw, uy0 + (uy1 - uy0) * 0.65)
+                ctx.line_to(sx0, uy0 + (uy1 - uy0) * 0.67); ctx.close_path(); fill_stroke(ctx, PAL["green"] if seed > 0.5 else PAL["wood"], 3)
+    # steep gable roof with tile rows
+    rx0, rx1, ry = x - over - 22, x + w + over + 22, uy0 - (w + 2 * over) * 0.62
+    ctx.new_path(); ctx.move_to(rx0, uy0); ctx.line_to((rx0 + rx1) / 2, ry); ctx.line_to(rx1, uy0); ctx.close_path(); fill_stroke(ctx, roof)
+    for k in range(1, 5):
+        fy = uy0 - (uy0 - ry) * k / 5; half = (rx1 - rx0) / 2 * (1 - k / 5)
+        line(ctx, [((rx0 + rx1) / 2 - half + 6, fy), ((rx0 + rx1) / 2 + half - 6, fy)], 3, tuple(c * 0.75 for c in roof))
+    # swinging shop sign
+    if sign:
+        bx = x + w + over; by = uy1 + 6
+        line(ctx, [(bx, by), (bx + 70, by)], 6, PAL["dgrey"])
+        a = 0.12 * math.sin(t * 2.2 + seed * 5)
+        ctx.save(); ctx.translate(bx + 55, by); ctx.rotate(a)
+        line(ctx, [(-18, 0), (-18, 24)], 3); line(ctx, [(18, 0), (18, 24)], 3)
+        rrect(ctx, -34, 24, 68, 52, 8); fill_stroke(ctx, PAL["gold"] if seed > 0.4 else PAL["cream"], 4)
+        circle(ctx, 0, 50, 12, PAL["red"] if seed > 0.6 else PAL["wood"], 3)
+        ctx.restore()
 
-def street(ctx, t, ground_y=760, seed=3):
-    sky(ctx); clouds(ctx, t, seed)
+def birds(ctx, t, n=4, seed=1):
+    r = random.Random(seed)
+    for k in range(n):
+        sp = 60 + r.random() * 60
+        x = (r.random() * W + t * sp) % (W + 300) - 150; y = 120 + r.random() * 200 + 12 * math.sin(t * 2 + k)
+        f = 14 * math.sin(t * 9 + k * 2)
+        line(ctx, [(x - 22, y - f), (x, y), (x + 22, y - f)], 4)
+
+def street(ctx, t, ground_y=760, seed=3, ext=0):
+    sky(ctx)
+    if ext: ctx.save(); ctx.translate(W, 0); sky(ctx); ctx.restore()
+    clouds(ctx, t, seed); birds(ctx, t, 4, seed)
+    # far skyline: church tower + roofs, pale
+    ctx.save(); ctx.push_group()
+    r0 = random.Random(seed + 50); x = -100
+    while x < W + 100 + ext:
+        w = 120 + r0.random() * 80; h = 160 + r0.random() * 140
+        ctx.rectangle(x, ground_y - 120 - h, w, h + 120); ctx.set_source_rgb(*rgb("c4d3dc")); ctx.fill()
+        ctx.new_path(); ctx.move_to(x - 8, ground_y - 120 - h); ctx.line_to(x + w / 2, ground_y - 120 - h - w * 0.5); ctx.line_to(x + w + 8, ground_y - 120 - h); ctx.close_path(); ctx.fill()
+        x += w + 6
+    ctx.rectangle(1300, ground_y - 700, 120, 600); ctx.fill()
+    ctx.new_path(); ctx.move_to(1290, ground_y - 700); ctx.line_to(1360, ground_y - 900); ctx.line_to(1430, ground_y - 700); ctx.close_path(); ctx.fill()
+    ctx.pop_group_to_source(); ctx.paint(); ctx.restore()
     r = random.Random(seed); x = -60
-    while x < W + 60:
-        w = 200 + r.random() * 90; h = 260 + r.random() * 180
-        house(ctx, x, ground_y, w, h, roof=r.choice([PAL["red"], PAL["brown"], rgb("6d5a4a"), PAL["rust"]]), seed=r.random())
-        x += w + 10
+    roofs = [PAL["red"], PAL["brown"], rgb("6d5a4a"), PAL["rust"], rgb("8a3a2e")]
+    walls = [PAL["cream"], rgb("f1dcb0"), rgb("e9d6c0"), rgb("f3e6cf")]
+    i = 0
+    while x < W + 60 + ext:
+        w = 210 + r.random() * 80; h = 330 + r.random() * 170
+        house(ctx, x, ground_y, w, h, roof=r.choice(roofs), wall=r.choice(walls), seed=r.random(), t=t, sign=(i % 3 == 1))
+        x += w + 44; i += 1
     ground(ctx, ground_y, seed=seed)
+    if ext: ctx.save(); ctx.translate(W, 0); ground(ctx, ground_y, seed=seed + 1); ctx.restore()
+    # cobbled lane
+    rr = random.Random(seed + 9)
+    for k in range(60):
+        cx, cy = rr.random() * W, ground_y + 30 + rr.random() * (H - ground_y)
+        ctx.new_path(); ctx.save(); ctx.translate(cx, cy); ctx.scale(1.6, 1); ctx.arc(0, 0, 12 + rr.random() * 8, 0, 6.3); ctx.restore()
+        ctx.set_source_rgba(0.35, 0.27, 0.2, 0.45); ctx.fill()
 
 def stone_wall(ctx, x0, y0, x1, y1, base=PAL["stone"], dark=False, seed=4):
     ctx.rectangle(x0, y0, x1 - x0, y1 - y0); ctx.set_source_rgb(*base); ctx.fill()
@@ -379,3 +455,113 @@ def big_x(ctx, x, y, s, p):
         if q <= 0: continue
         x0, y0 = x + a[0] * s, y + a[1] * s
         line(ctx, [(x0, y0), (x0 + (b[0] - a[0]) * s * q, y0 + (b[1] - a[1]) * s * q)], 22, PAL["scarlet"])
+
+# ------------------------------------------------------------------ extra kit for the full film
+def bubble(ctx, x, y, s, size=56, tail=(-60, 80)):
+    ctx.select_font_face("Itim"); ctx.set_font_size(size)
+    lines_ = s.split("\n"); w = max(ctx.text_extents(l).width for l in lines_) + 60; h = len(lines_) * size * 1.15 + 40
+    rrect(ctx, x - w / 2, y - h / 2, w, h, 30); fill_stroke(ctx, PAL["white"], 5)
+    ctx.new_path(); ctx.move_to(x - 20, y + h / 2 - 3); ctx.line_to(x + tail[0], y + h / 2 + tail[1]); ctx.line_to(x + 25, y + h / 2 - 3)
+    ctx.set_source_rgb(*PAL["white"]); ctx.fill_preserve(); ctx.set_source_rgb(*INK); ctx.set_line_width(5); ctx.stroke()
+    ctx.rectangle(x - 22, y + h / 2 - 8, 46, 10); ctx.set_source_rgb(*PAL["white"]); ctx.fill()
+    for i, l in enumerate(lines_):
+        text(ctx, l, x, y - h / 2 + 20 + size * 0.95 + i * size * 1.15, size, INK, font="Itim")
+
+def night_sky(ctx, t):
+    sky(ctx, PAL["night"], rgb("41557a"))
+    r = random.Random(3)
+    for k in range(70):
+        x, y = r.random() * W, r.random() * H * 0.6
+        a = 0.5 + 0.5 * math.sin(t * 2 + k)
+        ctx.new_path(); ctx.arc(x, y, 2.5, 0, 6.3); ctx.set_source_rgba(1, 1, 0.9, a); ctx.fill()
+    glow(ctx, 1600, 180, 220, (1, 1, 0.85), 0.25); circle(ctx, 1600, 180, 70, rgb("f3efd2"))
+
+def castle_keep(ctx, cx, base, s=1.0, col=None, night=False, turrets=4):
+    col = col or (rgb("c9c3b4") if not night else rgb("6d7488"))
+    w, h = 420 * s, 460 * s
+    ctx.rectangle(cx - w / 2, base - h, w, h); fill_stroke(ctx, col)
+    for k in range(turrets):
+        tx = cx - w / 2 + k * (w / (turrets - 1)) if turrets > 1 else cx
+        ctx.rectangle(tx - 40 * s, base - h - 90 * s, 80 * s, 90 * s); fill_stroke(ctx, col)
+        ctx.new_path(); ctx.move_to(tx - 46 * s, base - h - 90 * s); ctx.line_to(tx, base - h - 150 * s); ctx.line_to(tx + 46 * s, base - h - 90 * s); ctx.close_path(); fill_stroke(ctx, PAL["dgrey"])
+    for r_ in range(2):
+        for k in range(3):
+            rrect(ctx, cx - w / 3 + k * w / 3 - 16 * s, base - h + 90 * s + r_ * 150 * s, 32 * s, 60 * s, 14 * s)
+            fill_stroke(ctx, rgb("f6c445") if night else rgb("3d4a57"), 3)
+
+def horse(ctx, x, y, t, s=1.0, col=None, walk=0.0):
+    col = col or PAL["wood"]
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s)
+    for k, lx in enumerate((-90, -55, 60, 95)):
+        sw = math.sin(walk * math.pi + k * 1.6) * 16 if walk else 0
+        line(ctx, [(lx, -110), (lx + sw, -5)], 14, col); line(ctx, [(lx + sw - 6, -4), (lx + sw + 10, -4)], 12, INK)
+    ctx.new_path(); ctx.save(); ctx.translate(0, -150); ctx.scale(1.9, 1); ctx.arc(0, 0, 70, 0, 6.3); ctx.restore(); fill_stroke(ctx, col)
+    ctx.new_path(); ctx.move_to(100, -170); ctx.line_to(150, -270); ctx.line_to(205, -250); ctx.line_to(150, -150); ctx.close_path(); fill_stroke(ctx, col)
+    ctx.new_path(); ctx.save(); ctx.translate(195, -255); ctx.scale(1.4, 1); ctx.arc(0, 0, 32, 0, 6.3); ctx.restore(); fill_stroke(ctx, col)
+    circle(ctx, 192, -265, 5, INK, 1); line(ctx, [(-130, -170), (-170, -100 + 6 * math.sin(t * 4))], 10, INK)
+    ctx.restore()
+
+def rat(ctx, x, y, s, t):
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s)
+    line(ctx, [(-60, 0), (-110, 10 + 8 * math.sin(t * 5)), (-150, -10)], 5, rgb("c99a8a"))
+    ctx.new_path(); ctx.save(); ctx.scale(1.6, 1); ctx.arc(0, -25, 32, 0, 6.3); ctx.restore(); fill_stroke(ctx, rgb("8a8580"))
+    ctx.new_path(); ctx.move_to(40, -45); ctx.line_to(95, -18 + 3 * math.sin(t * 12)); ctx.line_to(40, -8); ctx.close_path(); fill_stroke(ctx, rgb("8a8580"))
+    circle(ctx, 35, -55, 14, rgb("c99a8a"), 3); circle(ctx, 65, -32, 5, INK, 1); circle(ctx, 95, -18 + 3 * math.sin(t * 12), 5, rgb("c99a8a"), 2)
+    for k in (-1, 1): line(ctx, [(92, -18), (120, -18 + k * 12)], 2)
+    ctx.restore()
+
+def bucket(ctx, x, y, s=1.0, water=rgb("7a6040")):
+    ctx.new_path(); ctx.move_to(x - 70 * s, y - 120 * s); ctx.line_to(x + 70 * s, y - 120 * s); ctx.line_to(x + 55 * s, y); ctx.line_to(x - 55 * s, y); ctx.close_path(); fill_stroke(ctx, PAL["wood"])
+    for k in (-1, 1): line(ctx, [(x - 66 * s, y - 120 * s + (40 if k > 0 else 0) * s + 20 * s), (x + 66 * s, y - 120 * s + (40 if k > 0 else 0) * s + 20 * s)], 6, PAL["dgrey"])
+    ctx.new_path(); ctx.save(); ctx.translate(x, y - 120 * s); ctx.scale(1, 0.25); ctx.arc(0, 0, 70 * s, 0, 6.3); ctx.restore(); fill_stroke(ctx, water, 4)
+
+def table(ctx, x, y, w, col=None):
+    rrect(ctx, x - w / 2, y, w, 34, 8); fill_stroke(ctx, col or PAL["wood"])
+    for lx in (x - w / 2 + 30, x + w / 2 - 30): line(ctx, [(lx, y + 34), (lx, y + 200)], 14, PAL["wood_d"])
+
+def wood_floor(ctx, y):
+    ctx.rectangle(-200, y, W + 400, H - y + 200); fill_stroke(ctx, rgb("9a6b43"))
+    for k in range(6): line(ctx, [(-200, y + 30 + k * 50), (W + 200, y + 30 + k * 50)], 3, PAL["wood_d"])
+
+def court_bg(ctx, t):
+    ctx.rectangle(-200, -200, W + 400, 1000); ctx.set_source_rgb(*rgb("a87b50")); ctx.fill()
+    for k in range(-1, 12):
+        ctx.rectangle(k * 190, -200, 8, 1000); ctx.set_source_rgb(*PAL["wood_d"]); ctx.fill()
+    for wx in (300, 960, 1620):
+        ctx.new_path(); ctx.move_to(wx - 80, 520); ctx.line_to(wx - 80, 230); ctx.arc(wx, 230, 80, math.pi, 0); ctx.line_to(wx + 80, 520); ctx.close_path()
+        fill_stroke(ctx, rgb("cfe3ee")); line(ctx, [(wx, 160), (wx, 520)], 6); line(ctx, [(wx - 80, 360), (wx + 80, 360)], 6)
+    wood_floor(ctx, 800)
+
+def bench(ctx, x, y, w):
+    rrect(ctx, x - w / 2, y - 120, w, 120, 10); fill_stroke(ctx, PAL["wood_d"])
+    rrect(ctx, x - w / 2 - 10, y - 135, w + 20, 24, 8); fill_stroke(ctx, PAL["wood"])
+
+def scroll_card(ctx, t, p, header, quote, source, quoted=True):
+    """A cartoon parchment held up on a dark stone wall, text written on."""
+    stone_wall(ctx, -200, -200, W + 200, H + 200, PAL["stone_d"], seed=40)
+    ctx.set_source_rgba(0, 0, 0, 0.35); ctx.paint()
+    x0, y0, w, h = 260, 120, 1400, 840
+    rrect(ctx, x0, y0, w, h, 26); fill_stroke(ctx, rgb("f1e2bd"), 6)
+    for yy in (y0, y0 + h):
+        rrect(ctx, x0 - 40, yy - 30, w + 80, 60, 30); fill_stroke(ctx, rgb("e2cb95"), 6)
+    text(ctx, header, W / 2, y0 + 130, 74, PAL["scarlet"])
+    ctx.select_font_face("Itim"); size = 66 if len(quote) < 120 else 56; ctx.set_font_size(size)
+    words = (("“" + quote + "”") if quoted else quote).split(); lines_, cur = [], ""
+    for wd in words:
+        tt = (cur + " " + wd).strip()
+        if ctx.text_extents(tt).width > w - 220 and cur: lines_.append(cur); cur = wd
+        else: cur = tt
+    lines_.append(cur)
+    yy = y0 + 250 + max(0, (4 - len(lines_))) * size * 0.5
+    shown = int(len(lines_) * min(1, p * 2.2 + 0.25) + 0.999)
+    for i, l in enumerate(lines_[:shown]):
+        text(ctx, l, W / 2, yy + i * size * 1.25, size, INK, font="Itim")
+    ctx.select_font_face("Itim"); ctx.set_font_size(36)
+    srcl, cur = [], ""
+    for wd in ("— " + source).split():
+        tt = (cur + " " + wd).strip()
+        if ctx.text_extents(tt).width > w - 300 and cur: srcl.append(cur); cur = wd
+        else: cur = tt
+    srcl.append(cur)
+    for i, l in enumerate(srcl):
+        text(ctx, l, W / 2, y0 + h - 70 - (len(srcl) - 1 - i) * 44, 36, rgb("7a5a3a"), font="Itim")
