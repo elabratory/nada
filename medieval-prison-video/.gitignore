@@ -9,3 +9,4 @@ voice_samples/
 assets/img/
 *.mp4
 !final/*.mp4
+ffmpeg2pass-*
