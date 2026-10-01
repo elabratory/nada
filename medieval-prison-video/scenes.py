@@ -1,8 +1,9 @@
 """Cartoon scenes, one function per shot key: f(ctx, t, p) with t = seconds (for idle animation)
 and p = 0..1 progress through the shot (for actions)."""
-import math, random
+import math, random, os
 from cartoon import *
 from cartoon import rat as _rat
+from stick import Char
 
 # recurring cast (same look in every scene)
 HERO = Char(body="brown", hair=rgb("4a3020"), beard=rgb("4a3020"), seed=1)
@@ -21,6 +22,8 @@ def seg(p, a, b): return min(1, max(0, (p - a) / (b - a)))
 
 # ------------------------------------------------------------------ cold open
 def city_wide(ctx, t, p):
+    if bg_image(ctx, 'bg_city', t, zoom=1.04 + 0.06 * p):
+        birds(ctx, t, 5, 2); text(ctx, 'London, 1322', W / 2, 920, 150, PAL['white'], outline=INK); return
     sky(ctx); clouds(ctx, t, 9)
     ctx.rectangle(-200, 640, W + 400, 140); fill_stroke(ctx, rgb("7fa7bd"))           # Thames
     for k in range(8): line(ctx, [(100 + k * 240 + (t * 20) % 240, 700), (160 + k * 240 + (t * 20) % 240, 700)], 4, PAL["white"])
@@ -43,7 +46,7 @@ def city_wide(ctx, t, p):
 
 def market(ctx, t, p):
     street(ctx, t, 760, seed=3)
-    for k, x in enumerate((230, 1500)):
+    for k, x in (enumerate((230, 1500)) if not os.path.exists('assets/bg/bg_street.png') else []):
         line(ctx, [(x, 760), (x, 520)], 10, PAL["wood"]); line(ctx, [(x + 300, 760), (x + 300, 520)], 10, PAL["wood"])
         ctx.new_path(); ctx.move_to(x - 30, 540); ctx.line_to(x + 330, 540); ctx.line_to(x + 300, 470); ctx.line_to(x, 470); ctx.close_path()
         fill_stroke(ctx, PAL["red"] if k == 0 else PAL["blue"])
@@ -92,8 +95,9 @@ def march(ctx, t, p):
     HERO.draw(ctx, 760, 1070, t, "sad", walk=t * 2.2, arms=(100, 80), size=1.7)
 
 def newgate_ext(ctx, t, p):
-    sky(ctx); clouds(ctx, t, 2); ground(ctx, 800, seed=4)
-    gatehouse(ctx, W / 2, 800, 1.05, t)
+    if not bg_image(ctx, 'bg_newgate', t, zoom=1.04 + 0.05 * p):
+        sky(ctx); clouds(ctx, t, 2); ground(ctx, 800, seed=4)
+        gatehouse(ctx, W / 2, 800, 1.05, t)
     GUARD.size = 0.55; HERO.size = 0.55
     xo = 760 + p * 160
     HERO.draw(ctx, xo, 960, t, "sad", walk=t * 2.2); GUARD.draw(ctx, xo + 80, 960, t, "angry", walk=t * 2.2, props=(None, "staff"))
@@ -102,6 +106,9 @@ def newgate_ext(ctx, t, p):
     arrow(ctx, 1450, 300, 1250, 420, PAL["white"])
 
 def newgate_door(ctx, t, p):
+    if bg_image(ctx, 'bg_door', t, zoom=1.04 + 0.06 * p):
+        if p > 0.4: face_draw(ctx, 960, 400, 45, 'angry', t, 3, (0, 0), False, 'dot')
+        return
     stone_wall(ctx, -200, -200, W + 200, H + 200, PAL["stone"], seed=12)
     ctx.new_path(); ctx.move_to(660, 1080); ctx.line_to(660, 420); ctx.arc(960, 420, 300, math.pi, 0); ctx.line_to(1260, 1080); ctx.close_path()
     fill_stroke(ctx, rgb("1d1f23"))
@@ -129,10 +136,11 @@ def door_shut(ctx, t, p):
     if p < 0.25: text(ctx, "SLAM", W / 2, H / 2 + 40, 200, PAL["white"], outline=INK, angle=-0.1)
 
 def torture_dark(ctx, t, p):
-    cell(ctx, t, window=False, floor_y=820, seed=14)
-    rrect(ctx, 1150, 600, 520, 60, 10); fill_stroke(ctx, PAL["wood"])
-    for x in (1180, 1610): line(ctx, [(x, 660), (x, 830)], 14, PAL["wood_d"])
-    for x in (1170, 1650): circle(ctx, x, 630, 50, PAL["wood_d"])
+    if not bg_image(ctx, 'bg_dungeon', t, zoom=1.06):
+        cell(ctx, t, window=False, floor_y=820, seed=14)
+        rrect(ctx, 1150, 600, 520, 60, 10); fill_stroke(ctx, PAL["wood"])
+        for x in (1180, 1610): line(ctx, [(x, 660), (x, 830)], 14, PAL["wood_d"])
+        for x in (1170, 1650): circle(ctx, x, 630, 50, PAL["wood_d"])
     T = Char(body="black", hat="executioner", size=1.1, body_w=1.2, seed=20)
     T.draw(ctx, 760, 1090, t, "grin", arms=(140, -30), props=(None, "chain"), size=1.9)
     if p > 0.45: big_x(ctx, 900, 640, 330, seg(p, 0.45, 0.75))
@@ -183,7 +191,8 @@ def candle_low(ctx, t, p):
         rrect(ctx, 1450, 640, 40, 110 - 80 * p, 6); fill_stroke(ctx, PAL["cream"], 4); flame(ctx, 1470, 640 - 6, 0.8, t)
 
 def title_corridor(ctx, t, p):
-    cell(ctx, t, window=False, seed=21)
+    if not bg_image(ctx, 'bg_dungeon', t, zoom=1.12):
+        cell(ctx, t, window=False, seed=21)
     ctx.set_source_rgba(0, 0, 0, 0.35); ctx.rectangle(0, 0, W, H); ctx.fill()
     HERO.draw(ctx, 1500, 1090, t, "scared", arms=(120, 60), props=("chain", "chain"), shiver=0.4, size=1.7)
     text(ctx, "Why You Wouldn't Survive", 760, 380, 120, PAL["white"], outline=INK)
@@ -218,7 +227,8 @@ def hands_chained(ctx, t, p):
 
 def noose(ctx, t, p):
     sky(ctx, rgb("b9c4cc"), rgb("e5e2da")); clouds(ctx, t, 5)
-    ctx.new_path(); ctx.move_to(-200, 900); ctx.curve_to(500, 700, 1300, 700, 2200, 900); ctx.line_to(2200, 1300); ctx.line_to(-200, 1300); ctx.close_path(); fill_stroke(ctx, rgb("7d9a5a"))
+    if not SK(): ctx.new_path(); ctx.move_to(-200, 900); ctx.curve_to(500, 700, 1300, 700, 2200, 900); ctx.line_to(2200, 1300); ctx.line_to(-200, 1300); ctx.close_path(); fill_stroke(ctx, rgb("7d9a5a"))
+    if SK(): return
     line(ctx, [(900, 760), (900, 260)], 26, PAL["wood"]); line(ctx, [(880, 280), (1250, 280)], 26, PAL["wood"]); line(ctx, [(900, 380), (1000, 280)], 16, PAL["wood"])
     a = 0.06 * math.sin(t * 1.5)
     ctx.save(); ctx.translate(1200, 290); ctx.rotate(a); line(ctx, [(0, 0), (0, 210)], 8, PAL["tan"])
@@ -277,11 +287,12 @@ def rich_purse(ctx, t, p):
 
 def rich_prisoner(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, 820, rgb("a29a8a"), seed=35); wood_floor(ctx, 820)
-    rrect(ctx, 120, 560, 620, 260, 20); fill_stroke(ctx, PAL["wood"]); rrect(ctx, 150, 520, 560, 110, 30); fill_stroke(ctx, PAL["scarlet"])
-    circle(ctx, 230, 540, 50, PAL["white"])
-    table(ctx, 1400, 720, 520)
-    for k in range(3): prop(ctx, "bread", 1260 + k * 120, 720, t)
-    prop(ctx, "jug", 1580, 720, t); prop(ctx, "candle", 1200, 720, t)
+    if not SK():
+        rrect(ctx, 120, 560, 620, 260, 20); fill_stroke(ctx, PAL["wood"]); rrect(ctx, 150, 520, 560, 110, 30); fill_stroke(ctx, PAL["scarlet"])
+        circle(ctx, 230, 540, 50, PAL["white"])
+        table(ctx, 1400, 720, 520)
+        for k in range(3): prop(ctx, "bread", 1260 + k * 120, 720, t)
+        prop(ctx, "jug", 1580, 720, t); prop(ctx, "candle", 1200, 720, t)
     M = Char(body="purple", hat="cap", beard=rgb("6b4a2a"), body_w=1.4, seed=41)
     M.draw(ctx, 960, 1060, t, "happy", arms=(140, -30), props=(None, "cup"), size=1.7)
     text(ctx, "\"reputable\"", 960, 260, 100, PAL["gold"], outline=INK)
@@ -298,7 +309,7 @@ def ludgate(ctx, t, p):
 
 def pushed_in(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, H + 200, PAL["stone"], seed=36)
-    ctx.new_path(); ctx.move_to(500, 1080); ctx.line_to(500, 450); ctx.arc(760, 450, 260, math.pi, 0); ctx.line_to(1020, 1080); ctx.close_path(); fill_stroke(ctx, rgb("16181b"))
+    if not SK(): ctx.new_path(); ctx.move_to(500, 1080); ctx.line_to(500, 450); ctx.arc(760, 450, 260, math.pi, 0); ctx.line_to(1020, 1080); ctx.close_path(); fill_stroke(ctx, rgb("16181b"))
     shove = seg(p, 0.15, 0.55)
     HERO.draw(ctx, 820 - shove * 170, 1080, t, "shock", arms=(200, -40), tilt=-0.25 * shove, size=1.8)
     KEEPER.draw(ctx, 1350 - shove * 120, 1080, t, "grin", arms=(185, 170), size=1.9)
@@ -306,6 +317,7 @@ def pushed_in(ctx, t, p):
 
 # =================================================================== CHAPTER 2
 def corridor(ctx, t, depth_shift=0.0, door_light=False, light_size=1.0):
+    if SK(): return
     ctx.set_source_rgb(*rgb("3b3a3a")); ctx.paint()
     vx, vy = W / 2, H * 0.47
     rings = sorted(((k + depth_shift) % 10 / 10, k) for k in range(10))
@@ -371,8 +383,10 @@ def latrine(ctx, t, p):
 def slit_window(ctx, t, p):
     cell(ctx, t, window=False, torch=False, seed=39, dim=0.15)
     wx, wy = 1100, 180
-    rrect(ctx, wx, wy, 90, 150, 8); fill_stroke(ctx, rgb("cfe3ee"))
-    for k in (1, 2): line(ctx, [(wx + k * 30, wy), (wx + k * 30, wy + 150)], 7)
+    if SK(): wx, wy = 900, 200
+    if not SK(): rrect(ctx, wx, wy, 90, 150, 8); fill_stroke(ctx, rgb("cfe3ee"))
+    if not SK():
+        for k in (1, 2): line(ctx, [(wx + k * 30, wy), (wx + k * 30, wy + 150)], 7)
     ctx.new_path(); ctx.move_to(wx, wy + 150); ctx.line_to(wx + 90, wy + 150); ctx.line_to(wx - 120, 1080); ctx.line_to(wx - 420, 1080); ctx.close_path(); ctx.set_source_rgba(1, 1, 0.9, 0.18); ctx.fill()
     HERO.draw(ctx, 620, 1080, t, "sad", look=(1, -1), arms=(110, 70), size=1.8)
     text(ctx, "tiny window", 1450, 260, 80, PAL["white"], outline=INK); arrow(ctx, 1380, 290, 1210, 260, PAL["white"])
@@ -380,10 +394,10 @@ def slit_window(ctx, t, p):
 
 def straw(ctx, t, p):
     straw_floor(ctx, -200, seed=40)
-    ctx.new_path(); ctx.save(); ctx.translate(960, 620); ctx.scale(3, 1); ctx.arc(0, 0, 120, 0, 6.3); ctx.restore(); fill_stroke(ctx, rgb("b0a46a"), 4)
+    ctx.new_path(); ctx.save(); ctx.translate(960, 960); ctx.scale(3, 0.7); ctx.arc(0, 0, 110, 0, 6.3); ctx.restore(); fill_stroke(ctx, rgb("b0a46a"), 4)
     for k in range(5):
         a = t * 1.2 + k
-        circle(ctx, 960 + 260 * math.cos(a), 600 + 50 * math.sin(a), 6, INK, 1)
+        circle(ctx, 960 + 260 * math.cos(a), 900 + 40 * math.sin(a), 6, INK, 1)
     text(ctx, "damp", 700, 260, 110, PAL["white"], outline=INK)
     if p > 0.55: text(ctx, "...and not only with water", 1150, 400, 74, PAL["scarlet"], outline=PAL["white"])
 
@@ -399,20 +413,23 @@ def dark_figures(ctx, t, p):
 def chains_floor(ctx, t, p):
     straw_floor(ctx, -200, seed=42)
     for k in range(18):
-        cx = 100 + k * 100; cy = 600 + 50 * math.sin(k * 0.5 + t * 1.5) * math.sin(t * 0.7)
+        cx = 100 + k * 100; cy = 990 + 30 * math.sin(k * 0.5 + t * 1.5) * math.sin(t * 0.7)
         ctx.new_path(); ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.55 if k % 2 else 1); ctx.arc(0, 0, 46, 0, 6.3); ctx.restore()
         ctx.set_source_rgb(*PAL["dgrey"]); ctx.set_line_width(20); ctx.stroke_preserve(); ctx.set_source_rgb(*INK); ctx.set_line_width(4); ctx.stroke()
 
 def ankle_iron(ctx, t, p):
-    straw_floor(ctx, -200, seed=43)
-    line(ctx, [(700, -100), (760, 640)], 120, PAL["brown"])
-    ctx.new_path(); ctx.save(); ctx.translate(820, 700); ctx.scale(2.2, 1); ctx.arc(0, 0, 70, 0, 6.3); ctx.restore(); fill_stroke(ctx, SKIN, 6)
+    cell(ctx, t, window=True, seed=43)
+    HERO.draw(ctx, 820, 1080, t, "grimace" if p > 0.4 else "scared", arms=(150, 30), sweat=True, size=1.9)
+    KEEPER.draw(ctx, 1300, 1080, t, "grin", arms=(140, 100), props=(None, "keys"), size=1.9)
     clamp = seg(p, 0.25, 0.45)
-    rrect(ctx, 650, 520 - (1 - clamp) * 200, 220, 70, 20); fill_stroke(ctx, PAL["dgrey"], 6)
-    for k in range(8):
-        ctx.new_path(); ctx.save(); ctx.translate(900 + k * 80, 560 + 20 * math.sin(k + t)); ctx.scale(1, 0.6 if k % 2 else 1); ctx.arc(0, 0, 26, 0, 6.3); ctx.restore()
-        ctx.set_source_rgb(*INK); ctx.set_line_width(9); ctx.stroke()
-    if clamp >= 1 and p < 0.75: text(ctx, "CLANK!", 1250, 330, 160, PAL["scarlet"], outline=PAL["white"], angle=-0.1)
+    ax, ay = 820 - 14 * 2.4 - 2, 1080 - 30 - (1 - clamp) * 260
+    ctx.new_path(); ctx.save(); ctx.translate(ax, ay); ctx.scale(1.6, 1); ctx.arc(0, 0, 22, 0, 6.3); ctx.restore()
+    ctx.set_source_rgb(*PAL["dgrey"]); ctx.set_line_width(14); ctx.stroke()
+    if clamp >= 1:
+        for k in range(7):
+            ctx.new_path(); ctx.save(); ctx.translate(ax - 40 - k * 34, ay + 8 + 4 * math.sin(k + t)); ctx.scale(1, 0.6 if k % 2 else 1); ctx.arc(0, 0, 13, 0, 6.3); ctx.restore()
+            ctx.set_source_rgb(*INK); ctx.set_line_width(6); ctx.stroke()
+        if p < 0.8: text(ctx, "CLANK!", 1300, 330, 170, PAL["scarlet"], outline=PAL["white"], angle=-0.1)
 
 def keeper_grin(ctx, t, p):
     cell(ctx, t, window=False, seed=44)
@@ -435,8 +452,9 @@ def empty_bowl(ctx, t, p):
 
 def keeper_ledger(ctx, t, p):
     cell(ctx, t, window=False, seed=47)
-    table(ctx, 760, 820, 560)
-    for k in range(5): circle(ctx, 620 + k * 60, 805, 22, rgb("c8ccd0"), 3)
+    if not SK():
+        table(ctx, 760, 820, 560)
+        for k in range(5): circle(ctx, 620 + k * 60, 805, 22, rgb("c8ccd0"), 3)
     KEEPER.draw(ctx, 760, 900, t, "smug", arms=(150, 30), size=1.6)
     rrect(ctx, 1200, 180, 560, 640, 14); fill_stroke(ctx, rgb("f1e2bd"))
     text(ctx, "FEES", 1480, 270, 80, PAL["scarlet"])
@@ -480,11 +498,11 @@ def family_grate(ctx, t, p):
 
 def will_scribe(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, 820, rgb("a29a8a"), seed=52); wood_floor(ctx, 820)
-    table(ctx, 960, 760, 760)
+    if not SK(): table(ctx, 960, 760, 760)
     rrect(ctx, 760, 620, 420, 150, 10); fill_stroke(ctx, rgb("f1e2bd"))
     text(ctx, "for the prisoners", 970, 690, 40, INK); text(ctx, "of Newgate...", 970, 740, 40, INK)
     CLERK.draw(ctx, 560, 1000, t, "neutral", arms=(150, -5), props=(None, "quill"), size=1.6)
-    prop(ctx, "candle", 1300, 760, t)
+    if not SK(): prop(ctx, "candle", 1300, 760, t)
     text(ctx, "charity", 1500, 300, 110, PAL["gold"], outline=INK)
 
 def baker(ctx, t, p):
@@ -544,9 +562,9 @@ def water_bucket(ctx, t, p):
 
 def rat(ctx, t, p):
     straw_floor(ctx, -200, seed=60)
-    _rat(ctx, 760 + 40 * math.sin(t * 1.5), 760, 3.0, t)
+    _rat(ctx, 760 + 40 * math.sin(t * 1.5), 1010, 2.6, t)
     for k in range(7):
-        jx = 1200 + k * 90; jy = 700 - abs(math.sin(t * 6 + k)) * 140
+        jx = 1200 + k * 90; jy = 980 - abs(math.sin(t * 6 + k)) * 140
         circle(ctx, jx, jy, 7, INK, 1)
     for k, w_ in enumerate(["Lice.", "Fleas.", "Rats."]):
         if p > k * 0.25: text(ctx, w_, 420 + k * 540, 250, 120, PAL["white"], outline=INK)
@@ -599,8 +617,8 @@ def rebuild(ctx, t, p):
 
 # =================================================================== CHAPTER 5
 def dungeon_pit(ctx, t, p):
-    ctx.set_source_rgb(*PAL["stone"]); ctx.paint()
-    for k in range(12, 0, -1):
+    if not SK(): ctx.set_source_rgb(*PAL["stone"]); ctx.paint()
+    for k in (range(12, 0, -1) if not SK() else []):
         g = 0.12 + k * 0.04
         ctx.new_path(); ctx.arc(960, 540, k * 40, 0, 6.3); ctx.set_source_rgb(g, g, g * 1.05); ctx.fill_preserve(); ctx.set_source_rgb(*INK); ctx.set_line_width(3); ctx.stroke()
     HERO.draw(ctx, 960, 580, t, "sad", look=(0, -1), size=0.25)
@@ -620,6 +638,7 @@ def lock_key(ctx, t, p):
 
 def york_castle(ctx, t, p):
     sky(ctx); clouds(ctx, t, 11); birds(ctx, t, 3, 7)
+    if SK(): return
     ctx.new_path(); ctx.move_to(-200, 1100); ctx.curve_to(400, 860, 1500, 860, 2200, 1100); ctx.close_path(); fill_stroke(ctx, rgb("7d9a5a"))
     ctx.new_path(); ctx.move_to(560, 860); ctx.curve_to(760, 560, 1160, 560, 1360, 860); ctx.close_path(); fill_stroke(ctx, rgb("8fae66"))
     castle_keep(ctx, 960, 650, 0.6, turrets=4)
@@ -633,6 +652,7 @@ def town_gate(ctx, t, p):
 
 def tower(ctx, t, p):
     sky(ctx); clouds(ctx, t, 12); birds(ctx, t, 4, 9)
+    if SK(): return
     ctx.rectangle(-200, 820, W + 400, 400); fill_stroke(ctx, rgb("7fa7bd"))
     for k in range(8): line(ctx, [(80 + k * 250 + (t * 25) % 250, 900), (150 + k * 250 + (t * 25) % 250, 900)], 4, PAL["white"])
     ctx.rectangle(200, 700, 1520, 130); fill_stroke(ctx, rgb("c9c3b4"))
@@ -667,6 +687,7 @@ def hero_eyes(ctx, t, p):
 
 def tower_night(ctx, t, p):
     night_sky(ctx, t)
+    if SK(): return
     ctx.rectangle(-200, 860, W + 400, 300); fill_stroke(ctx, rgb("2b3e5a"))
     castle_keep(ctx, 960, 870, 0.95, night=True)
     for x in (560, 1360): flame(ctx, x, 380, 0.8, t)
@@ -675,8 +696,9 @@ def feast(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, 820, rgb("a29a8a"), seed=67); wood_floor(ctx, 820)
     BISHOP = Char(body=rgb("7a2f6a"), hat="mitre", body_w=1.25, seed=60)
     BISHOP.draw(ctx, 960, 1000, t, "grin", arms=(250, 300), props=(None, "cup"), size=1.6)
-    table(ctx, 960, 820, 1500)
-    for k in range(4): prop(ctx, "jug", 500 + k * 300, 820, t)
+    if not SK():
+        table(ctx, 960, 820, 1500)
+        for k in range(4): prop(ctx, "jug", 500 + k * 300, 820, t)
     for k, x in enumerate((360, 1560)):
         G = Char(body=rgb("8f9aa0"), hat="kettle", seed=61 + k)
         G.draw(ctx, x, 1000, t, "happy", eyes="closed", arms=(260, 290), props=(None, "cup"), tilt=0.12 * math.sin(t * 1.5 + k), size=1.5)
@@ -692,16 +714,18 @@ def wine_jug(ctx, t, p):
 
 def rope_wall(ctx, t, p):
     night_sky(ctx, t)
-    ctx.rectangle(600, -200, 700, H + 400); fill_stroke(ctx, rgb("6d7488"))
-    rrect(ctx, 880, 120, 140, 200, 60); fill_stroke(ctx, rgb("f6c445"))
+    if not SK():
+        ctx.rectangle(600, -200, 700, H + 400); fill_stroke(ctx, rgb("6d7488"))
+        rrect(ctx, 880, 120, 140, 200, 60); fill_stroke(ctx, rgb("f6c445"))
     line(ctx, [(950, 300), (955, 1100)], 10, PAL["tan"])
     BISHOP = Char(body=rgb("7a2f6a"), hat="mitre", body_w=1.25, seed=60)
     BISHOP.draw(ctx, 950, 420 + p * 520, t, "grin", arms=(280, 260), size=0.9)
 
 def sheet_rope(ctx, t, p):
     night_sky(ctx, t)
-    ctx.rectangle(500, -200, 900, H + 400); fill_stroke(ctx, rgb("6d7488"))
-    rrect(ctx, 840, 120, 220, 240, 80); fill_stroke(ctx, rgb("f6c445"))
+    if not SK():
+        ctx.rectangle(500, -200, 900, H + 400); fill_stroke(ctx, rgb("6d7488"))
+        rrect(ctx, 840, 120, 220, 240, 80); fill_stroke(ctx, rgb("f6c445"))
     for k in range(9):
         y = 330 + k * 85; x = 950 + 12 * math.sin(t * 2 + k * 0.6)
         rrect(ctx, x - 26, y, 52, 80, 10); fill_stroke(ctx, [PAL["white"], rgb("d8c9a8"), PAL["scarlet"]][k % 3], 4)
@@ -713,8 +737,9 @@ def sheet_rope(ctx, t, p):
 
 def kitchen(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, 820, rgb("8e8577"), seed=68); wood_floor(ctx, 820)
-    ctx.new_path(); ctx.move_to(1250, 820); ctx.line_to(1250, 450); ctx.arc(1500, 450, 250, math.pi, 0); ctx.line_to(1750, 820); ctx.close_path(); fill_stroke(ctx, rgb("1d1f23"))
-    glow(ctx, 1500, 720, 300, a=0.4); flame(ctx, 1500, 760, 2.0, t)
+    if not SK():
+        ctx.new_path(); ctx.move_to(1250, 820); ctx.line_to(1250, 450); ctx.arc(1500, 450, 250, math.pi, 0); ctx.line_to(1750, 820); ctx.close_path(); fill_stroke(ctx, rgb("1d1f23"))
+        glow(ctx, 1500, 720, 300, a=0.4); flame(ctx, 1500, 760, 2.0, t)
     COOK = Char(body="cream", hat="cap", body_w=1.3, seed=63)
     COOK.draw(ctx, 1100, 1040, t, "neutral", eyes="closed", tilt=0.3, size=1.3)
     text(ctx, "zzz", 1180, 600 - (t * 30) % 60, 70, PAL["white"], outline=INK)
@@ -727,8 +752,8 @@ def kitchen(ctx, t, p):
 def boat(ctx, t, p):
     night_sky(ctx, t)
     castle_keep(ctx, 500, 620, 0.6, night=True)
-    ctx.rectangle(-200, 620, W + 400, 600); fill_stroke(ctx, rgb("2b3e5a"))
-    for k in range(10): line(ctx, [(60 + k * 200 + (t * 30) % 200, 700 + (k % 3) * 120), (130 + k * 200 + (t * 30) % 200, 700 + (k % 3) * 120)], 4, rgb("6d88aa"))
+    if not SK(): ctx.rectangle(-200, 620, W + 400, 600); fill_stroke(ctx, rgb("2b3e5a"))
+    for k in (range(10) if not SK() else []): line(ctx, [(60 + k * 200 + (t * 30) % 200, 700 + (k % 3) * 120), (130 + k * 200 + (t * 30) % 200, 700 + (k % 3) * 120)], 4, rgb("6d88aa"))
     bx = 800 + p * 600; by = 860 + 8 * math.sin(t * 2)
     ctx.new_path(); ctx.move_to(bx - 200, by); ctx.line_to(bx + 200, by); ctx.line_to(bx + 150, by + 70); ctx.line_to(bx - 150, by + 70); ctx.close_path(); fill_stroke(ctx, PAL["wood"])
     MORT = Char(body="black", hat="hood", seed=65)
@@ -744,10 +769,11 @@ def breakout(ctx, t, p):
 
 def sanctuary(ctx, t, p):
     sky(ctx); clouds(ctx, t, 15); ground(ctx, 860, seed=16)
-    ctx.rectangle(560, 260, 800, 600); fill_stroke(ctx, PAL["stone"])
-    ctx.new_path(); ctx.move_to(520, 270); ctx.line_to(960, 40); ctx.line_to(1400, 270); ctx.close_path(); fill_stroke(ctx, PAL["dgrey"])
-    line(ctx, [(960, 40), (960, -80)], 10); line(ctx, [(920, -40), (1000, -40)], 10)
-    ctx.new_path(); ctx.move_to(860, 860); ctx.line_to(860, 620); ctx.arc(960, 620, 100, math.pi, 0); ctx.line_to(1060, 860); ctx.close_path(); fill_stroke(ctx, PAL["wood"])
+    if not SK():
+        ctx.rectangle(560, 260, 800, 600); fill_stroke(ctx, PAL["stone"])
+        ctx.new_path(); ctx.move_to(520, 270); ctx.line_to(960, 40); ctx.line_to(1400, 270); ctx.close_path(); fill_stroke(ctx, PAL["dgrey"])
+        line(ctx, [(960, 40), (960, -80)], 10); line(ctx, [(920, -40), (1000, -40)], 10)
+        ctx.new_path(); ctx.move_to(860, 860); ctx.line_to(860, 620); ctx.arc(960, 620, 100, math.pi, 0); ctx.line_to(1060, 860); ctx.close_path(); fill_stroke(ctx, PAL["wood"])
     PRIEST = Char(body="black", hat=None, bald=True, seed=66)
     PRIEST.draw(ctx, 960, 900, t, "neutral", arms=(120, 60), size=0.9)
     for k, c in enumerate([CROWD[3], CROWD[6], CROWD[7]]):
@@ -760,7 +786,7 @@ def hero_window(ctx, t, p):
     rrect(ctx, 1160, 600, 600, 300, 14); fill_stroke(ctx, PAL["cream"])
     text(ctx, "Famous escapers had:", 1460, 670, 50, INK)
     for k, item in enumerate(["friends", "money", "help inside"]):
-        if p > 0.2 + k * 0.2: text(ctx, "✓ " + item, 1460, 740 + k * 55, 50, PAL["green"])
+        if p > 0.2 + k * 0.2: text(ctx, "+ " + item, 1460, 740 + k * 55, 50, PAL["green"])
 
 def wall_ring(ctx, t, p):
     stone_wall(ctx, -200, -200, W + 200, 820, PAL["stone"], seed=71); straw_floor(ctx, 820)
@@ -869,14 +895,14 @@ def empty_purse(ctx, t, p):
 
 def open_ring(ctx, t, p):
     straw_floor(ctx, -200, seed=80)
-    ctx.new_path(); ctx.arc(960, 560, 180, 0.3, 2 * math.pi - 0.6); ctx.set_source_rgb(*PAL["dgrey"]); ctx.set_line_width(46); ctx.stroke()
+    ctx.new_path(); ctx.save(); ctx.translate(960, 950); ctx.scale(1.6, 0.6); ctx.arc(0, 0, 110, 0.3, 2 * math.pi - 0.6); ctx.restore(); ctx.set_source_rgb(*PAL["dgrey"]); ctx.set_line_width(30); ctx.stroke()
     if p > 0.3: text(ctx, "never convicted", 960, 230, 110, PAL["white"], outline=INK)
 
 def castle_banners(ctx, t, p):
     sky(ctx, rgb("f2c48a"), rgb("fbe6c4")); clouds(ctx, t, 17)
-    ctx.new_path(); ctx.move_to(-200, 1100); ctx.curve_to(400, 760, 1500, 760, 2200, 1100); ctx.close_path(); fill_stroke(ctx, rgb("8fae66"))
+    if not SK(): ctx.new_path(); ctx.move_to(-200, 1100); ctx.curve_to(400, 760, 1500, 760, 2200, 1100); ctx.close_path(); fill_stroke(ctx, rgb("8fae66"))
     castle_keep(ctx, 960, 780, 0.8)
-    for k, x in enumerate((640, 960, 1280)):
+    for k, x in (enumerate((640, 960, 1280)) if not SK() else []):
         line(ctx, [(x, 230), (x, 60)], 8)
         wv = [(x, 70), (x + 60, 80 + 14 * math.sin(t * 4 + k)), (x + 120, 70 + 10 * math.sin(t * 4 + k + 1)), (x + 120, 130), (x + 60, 140 + 14 * math.sin(t * 4 + k)), (x, 130)]
         ctx.new_path(); ctx.move_to(*wv[0])

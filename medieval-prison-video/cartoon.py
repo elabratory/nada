@@ -39,7 +39,13 @@ def wobble(seed, t, amp=1.0, f=1.0):
     return amp * math.sin(t * f * 2 * math.pi + seed * 1.7)
 
 # ------------------------------------------------------------------ text
-def text(ctx, s, x, y, size=90, col=INK, font="Itim", align="center", outline=None, angle=0.0):
+def text(ctx, s, x, y, size=90, col=INK, font="Anton", align="center", outline=None, angle=0.0):
+    if outline and font == "Anton":      # reference-style caption: drop shadow behind the outline
+        ctx.save(); ctx.translate(x + size * 0.05, y + size * 0.06); ctx.rotate(angle)
+        ctx.select_font_face(font); ctx.set_font_size(size); e = ctx.text_extents(s)
+        dx = {"center": -e.width / 2 - e.x_bearing, "left": 0, "right": -e.width}[align]
+        ctx.move_to(dx, 0); ctx.text_path(s); ctx.set_source_rgba(0, 0, 0, 0.85); ctx.set_line_width(size * 0.16); ctx.set_line_join(cairo.LINE_JOIN_ROUND); ctx.stroke_preserve(); ctx.fill()
+        ctx.restore()
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle)
     ctx.select_font_face(font, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL); ctx.set_font_size(size)
     ext = ctx.text_extents(s)
@@ -270,10 +276,12 @@ def glow(ctx, x, y, r, col=(1, 0.8, 0.4), a=0.35):
 
 # ------------------------------------------------------------------ backgrounds
 def sky(ctx, top=PAL["sky"], bottom=rgb("dbeaf2")):
+    if SKIP['on']: return
     g = cairo.LinearGradient(0, 0, 0, H); g.add_color_stop_rgb(0, *top); g.add_color_stop_rgb(1, *bottom)
     ctx.set_source(g); ctx.rectangle(-200, -200, W + 400, H + 400); ctx.fill()
 
 def clouds(ctx, t, seed=1):
+    if SKIP['on']: return
     r = random.Random(seed)
     for k in range(5):
         x = (r.random() * W * 1.3 + t * 12 * (0.5 + r.random())) % (W + 400) - 200; y = 80 + r.random() * 220
@@ -283,6 +291,7 @@ def clouds(ctx, t, seed=1):
         ctx.set_source_rgb(*PAL["white"]); ctx.fill()
 
 def ground(ctx, y, col=PAL["mud"], puddles=True, seed=2):
+    if SKIP['on']: return
     ctx.rectangle(-200, y, W + 400, H - y + 200); fill_stroke(ctx, col, 5)
     r = random.Random(seed)
     if puddles:
@@ -295,6 +304,7 @@ def ground(ctx, y, col=PAL["mud"], puddles=True, seed=2):
         line(ctx, [(px, py), (px + 22, py + 2)], 3, rgb("5f4630"))
 
 def house(ctx, x, y_base, w, h, roof=PAL["red"], wall=PAL["cream"], seed=0, t=0.0, sign=False):
+    if SKIP['on']: return
     r = random.Random(seed)
     h1 = h * 0.45                     # ground floor
     over = 18                         # jettied upper storey overhang
@@ -357,6 +367,10 @@ def birds(ctx, t, n=4, seed=1):
         line(ctx, [(x - 22, y - f), (x, y), (x + 22, y - f)], 4)
 
 def street(ctx, t, ground_y=760, seed=3, ext=0):
+    if SKIP['on']: return
+    if bg_image(ctx, 'bg_street', t, zoom=1.04 + (0.35 if ext else 0), pan=-1 if ext else 0):
+        birds(ctx, t, 3, seed)
+        return
     sky(ctx)
     if ext: ctx.save(); ctx.translate(W, 0); sky(ctx); ctx.restore()
     clouds(ctx, t, seed); birds(ctx, t, 4, seed)
@@ -389,6 +403,7 @@ def street(ctx, t, ground_y=760, seed=3, ext=0):
         ctx.set_source_rgba(0.35, 0.27, 0.2, 0.45); ctx.fill()
 
 def stone_wall(ctx, x0, y0, x1, y1, base=PAL["stone"], dark=False, seed=4):
+    if SKIP['on']: return
     ctx.rectangle(x0, y0, x1 - x0, y1 - y0); ctx.set_source_rgb(*base); ctx.fill()
     r = random.Random(seed); bh = 70; row = 0; y = y0
     while y < y1:
@@ -403,6 +418,7 @@ def stone_wall(ctx, x0, y0, x1, y1, base=PAL["stone"], dark=False, seed=4):
         y += bh; row += 1
 
 def straw_floor(ctx, y, seed=5):
+    if SKIP['on']: return
     ctx.rectangle(-200, y, W + 400, H - y + 200); fill_stroke(ctx, rgb("7d6a4e"), 5)
     r = random.Random(seed)
     for k in range(160):
@@ -411,6 +427,11 @@ def straw_floor(ctx, y, seed=5):
         line(ctx, [(px, py), (px + 34 * math.cos(a), py + 34 * math.sin(a))], 4, PAL["straw"] if r.random() > 0.3 else rgb("b8963f"))
 
 def cell(ctx, t, window=True, torch=True, floor_y=800, dim=0.0, seed=6, bars=False):
+    if SKIP['on']:
+        if dim: ctx.set_source_rgba(0.04, 0.04, 0.08, dim); ctx.rectangle(-200, -200, W + 400, H + 400); ctx.fill()
+        return
+    if bg_image(ctx, 'bg_cell', t, zoom=1.04 + (seed % 5) * 0.04, pan=((seed % 3) - 1) * 0.6, dim=dim):
+        return
     stone_wall(ctx, -200, -200, W + 200, floor_y, PAL["stone_d"], seed=seed)
     if window:
         wx, wy = 1560, 330
@@ -431,6 +452,7 @@ def cell(ctx, t, window=True, torch=True, floor_y=800, dim=0.0, seed=6, bars=Fal
         ctx.set_source_rgba(0.05, 0.05, 0.1, dim); ctx.rectangle(-200, -200, W + 400, H + 400); ctx.fill()
 
 def gatehouse(ctx, cx, base_y, s=1.0, t=0):
+    if SKIP['on']: return
     for side in (-1, 1):
         tx = cx + side * 260 * s
         rrect(ctx, tx - 120 * s, base_y - 620 * s, 240 * s, 620 * s, 6); fill_stroke(ctx, PAL["stone"])
@@ -468,6 +490,7 @@ def bubble(ctx, x, y, s, size=56, tail=(-60, 80)):
         text(ctx, l, x, y - h / 2 + 20 + size * 0.95 + i * size * 1.15, size, INK, font="Itim")
 
 def night_sky(ctx, t):
+    if SKIP['on']: return
     sky(ctx, PAL["night"], rgb("41557a"))
     r = random.Random(3)
     for k in range(70):
@@ -477,6 +500,7 @@ def night_sky(ctx, t):
     glow(ctx, 1600, 180, 220, (1, 1, 0.85), 0.25); circle(ctx, 1600, 180, 70, rgb("f3efd2"))
 
 def castle_keep(ctx, cx, base, s=1.0, col=None, night=False, turrets=4):
+    if SKIP['on']: return
     col = col or (rgb("c9c3b4") if not night else rgb("6d7488"))
     w, h = 420 * s, 460 * s
     ctx.rectangle(cx - w / 2, base - h, w, h); fill_stroke(ctx, col)
@@ -516,14 +540,17 @@ def bucket(ctx, x, y, s=1.0, water=rgb("7a6040")):
     ctx.new_path(); ctx.save(); ctx.translate(x, y - 120 * s); ctx.scale(1, 0.25); ctx.arc(0, 0, 70 * s, 0, 6.3); ctx.restore(); fill_stroke(ctx, water, 4)
 
 def table(ctx, x, y, w, col=None):
+    if SKIP['on'] and SKIP.get('no_table'): return
     rrect(ctx, x - w / 2, y, w, 34, 8); fill_stroke(ctx, col or PAL["wood"])
     for lx in (x - w / 2 + 30, x + w / 2 - 30): line(ctx, [(lx, y + 34), (lx, y + 200)], 14, PAL["wood_d"])
 
 def wood_floor(ctx, y):
+    if SKIP['on']: return
     ctx.rectangle(-200, y, W + 400, H - y + 200); fill_stroke(ctx, rgb("9a6b43"))
     for k in range(6): line(ctx, [(-200, y + 30 + k * 50), (W + 200, y + 30 + k * 50)], 3, PAL["wood_d"])
 
 def court_bg(ctx, t):
+    if SKIP['on']: return
     ctx.rectangle(-200, -200, W + 400, 1000); ctx.set_source_rgb(*rgb("a87b50")); ctx.fill()
     for k in range(-1, 12):
         ctx.rectangle(k * 190, -200, 8, 1000); ctx.set_source_rgb(*PAL["wood_d"]); ctx.fill()
@@ -533,6 +560,7 @@ def court_bg(ctx, t):
     wood_floor(ctx, 800)
 
 def bench(ctx, x, y, w):
+    if SKIP['on']: return
     rrect(ctx, x - w / 2, y - 120, w, 120, 10); fill_stroke(ctx, PAL["wood_d"])
     rrect(ctx, x - w / 2 - 10, y - 135, w + 20, 24, 8); fill_stroke(ctx, PAL["wood"])
 
@@ -565,3 +593,35 @@ def scroll_card(ctx, t, p, header, quote, source, quoted=True):
     srcl.append(cur)
     for i, l in enumerate(srcl):
         text(ctx, l, W / 2, y0 + h - 70 - (len(srcl) - 1 - i) * 44, 36, rgb("7a5a3a"), font="Itim")
+
+# ------------------------------------------------------------------ illustrated backgrounds (AI-drawn, no people)
+_BG = {}
+def bg_image(ctx, name, t=0.0, zoom=1.04, pan=0.0, dim=0.0):
+    """Paint assets/bg/<name>.png to cover the frame. pan in [-1, 1] slides horizontally. Returns False if missing."""
+    import os
+    path = f"assets/bg/{name}.png"
+    if name not in _BG:
+        if not os.path.exists(path):
+            _BG[name] = None
+        else:
+            from PIL import Image
+            from PIL import ImageFilter, ImageEnhance
+            im = Image.open(path).convert("RGB").resize((W + 400, int((W + 400) * 9 / 16)), Image.LANCZOS)
+            im = ImageEnhance.Color(im.filter(ImageFilter.GaussianBlur(1.6))).enhance(0.9)
+            tmp = f"build/_bg_{name}.png"; im.save(tmp)
+            _BG[name] = cairo.ImageSurface.create_from_png(tmp)
+    surf = _BG[name]
+    if surf is None: return False
+    sw, sh = surf.get_width(), surf.get_height()
+    sc = max(W / sw, H / sh) * zoom
+    ox = (W - sw * sc) / 2 + pan * (sw * sc - W) / 2
+    oy = (H - sh * sc) / 2
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(sc, sc); ctx.set_source_surface(surf, 0, 0); ctx.paint(); ctx.restore()
+    if dim:
+        ctx.set_source_rgba(0.04, 0.04, 0.08, dim); ctx.rectangle(-200, -200, W + 400, H + 400); ctx.fill()
+    return True
+
+
+# when an illustrated background is painted behind a scene, coded scenery helpers become no-ops
+SKIP = {"on": False}
+def SK(): return SKIP["on"]

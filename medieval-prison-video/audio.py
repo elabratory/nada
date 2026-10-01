@@ -273,7 +273,7 @@ def mix():
     # ambience beds follow the shots (street vs prison), with crossfades
     street = verb(loop_to(babble_clip(), n), IR_STREET, 0.3)[:n] * 0.5 + pan(loop_to(sfx_wind(12), n)[:, 0], 0) * 0.15
     prison = (pan(lp(rng.standard_normal(n), 120), 0) * 0.08 + pan(sfx_fire(total + 1), 0.4)[:n] * 0.10
-              + verb(lp(loop_to(babble_clip(), n), 700), IR_STONE, 0.6)[:n] * 0.10)
+              )
     ext_mask = np.zeros(n); card_mask = np.zeros(n)
     for s in tl["shots"]:
         i0, i1 = int(max(0, s["t0"]) * SR), int(s["t1"] * SR)
@@ -285,7 +285,7 @@ def mix():
     for tt in np.arange(20, total, 17.0):
         i = int(tt * SR)
         if ext_mask[i] < 0.5:
-            c = (sfx_chains() if (int(tt) // 17) % 2 else sfx_drip()) * 0.15
+            c = (sfx_chains() if (int(tt) // 17) % 2 else sfx_drip()) * 0.05
             fx[i:i + len(c)] += c[:n - i]
     # cued SFX
     SFX = {"chains": sfx_chains, "keys": sfx_keys, "coins": sfx_coins, "clank": sfx_clank, "lock": sfx_lock,
@@ -293,7 +293,7 @@ def mix():
            "door_creak": sfx_door_creak, "door_slam": sfx_door_slam, "boom": sfx_boom, "bells": sfx_bells,
            "wind": lambda: sfx_wind(7), "drip": sfx_drip, "squeak": sfx_squeak, "hammer": sfx_hammer,
            "hooves": lambda: sfx_hooves(6), "water": lambda: sfx_water(6), "night": lambda: sfx_wind(8) * 0.6,
-           "crowd": lambda: verb(babble_clip()[:6 * SR], IR_STREET, 0.3) * 0.6, "murmur": lambda: verb(lp(babble_clip()[:7 * SR], 900), IR_STONE, 0.6) * 0.5,
+           "crowd": lambda: verb(babble_clip()[:6 * SR], IR_STREET, 0.3) * 0.2, "murmur": lambda: verb(lp(babble_clip()[:7 * SR], 900), IR_STONE, 0.6) * 0.15,
            "shout": lambda: sfx_shout()}
     for sid, (t0, t1, d) in tl["segs"].items():
         for name, off in segs[sid].get("sfx", []):
@@ -310,7 +310,7 @@ def mix():
     music *= duck[:, None]; amb *= (0.55 + 0.45 * duck)[:, None]
     vo = hp(vo, 70)
     vo_st = verb(vo, IR_VOICE, 0.10)[:n] * math.sqrt(2)
-    master = vo_st * 1.0 + music * 0.30 + amb * 0.35 + fx * 0.5
+    master = vo_st * 1.0 + music * 0.40 + amb * 0.10 + fx * 0.35
     fade = np.minimum(1, np.arange(n) / SR / 0.5) * np.clip((total + 0.5 - np.arange(n) / SR) / 1.5, 0, 1)
     master *= fade[:, None]
     import soundfile as sf

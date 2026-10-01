@@ -230,7 +230,7 @@ SEGMENTS = [
          shots=[("city_wide", "dolly", 1)], text_overlay="LONDON, ENGLAND — 1322", pause=0.5,
          sfx=[("bells", 0.0), ("crowd", 0.0)]),
     dict(id="s02", text="A crowded market. A shout. A purse has been cut.",
-         shots=[("market", "pan_r", 1.2), ("purse_cut", "push", 1)], sfx=[("shout", 1.6)]),
+         shots=[("market", "pan_r", 1.2), ("purse_cut", "push", 1)]),
     dict(id="s03", text="Heads turn. A finger points. At you.",
          shots=[("pointing", "push", 1), ("hero_shock", "dolly", 1)], pause=0.4),
     dict(id="s04", text="You didn't do it. Right now, that doesn't matter.",

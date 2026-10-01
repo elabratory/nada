@@ -7,6 +7,18 @@ from cartoon import W, H, text, PAL, INK, rgb, rrect, fill_stroke
 import scenes
 from script_data import SEGMENTS
 FPS = 24
+# illustrated background behind each scene (scenes using street()/cell() pick theirs up automatically)
+BGMAP = {
+    "gaol_hall": "bg_guard_room", "noose": "bg_gallows", "rich_prisoner": "bg_room_rich", "ludgate": "bg_town_gate",
+    "pushed_in": "bg_door", "pov_corridor": "bg_corridor", "look_back": "bg_corridor", "keeper_back": "bg_corridor",
+    "keeper_ledger": "bg_guard_room", "will_scribe": "bg_desk", "rebuild": "bg_newgate", "dungeon_pit": "bg_pit",
+    "york_castle": "bg_castle_hill", "town_gate": "bg_town_gate", "tower": "bg_tower_day", "stocks": "bg_village",
+    "keys_hook": "bg_guard_room", "tower_night": "bg_tower_night", "feast": "bg_hall", "rope_wall": "bg_tower_night",
+    "sheet_rope": "bg_tower_night", "kitchen": "bg_kitchen", "boat": "bg_river_night", "sanctuary": "bg_church",
+    "wall_ring": "bg_cell", "court_empty": "bg_court", "clerk": "bg_court", "court_wide": "bg_court", "jury": "bg_court",
+    "castle_banners": "bg_sunset_castle", "straw": "bg_cell", "chains_floor": "bg_cell", "empty_bowl": "bg_cell",
+    "rat": "bg_cell", "empty_purse": "bg_cell", "open_ring": "bg_cell",
+}
 # bottom-left labels, only where the scene itself does not already show the same words
 LABELS = {"s49": "London, 1419", "s55": "York Castle", "s57": "The Tower of London", "s84": "Nottingham, 1357", "s64": "Tower of London"}
 
@@ -25,7 +37,15 @@ def draw_frame(ctx, t, shots, seg_times):
     ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2)
     scenes.CUR["seg"] = s["seg"]["id"]
     fn = scenes.SCENES.get(key.replace("card:", "card_"))
-    if fn: fn(ctx, t, p)
+    import cartoon
+    bg = BGMAP.get(key)
+    if bg and cartoon.bg_image(ctx, bg, t, zoom=1.04 + 0.05 * p + (0.25 if key == "sheet_rope" else 0)):
+        cartoon.SKIP["on"] = True
+        try:
+            if fn: fn(ctx, t, p)
+        finally:
+            cartoon.SKIP["on"] = False
+    elif fn: fn(ctx, t, p)
     else: placeholder(ctx, t, p, key)
     ctx.restore()
     # chapter title cards + selected labels
