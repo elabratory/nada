@@ -78,19 +78,21 @@ def pointing(ctx, t, p):
 def hero_shock(ctx, t, p):
     street(ctx, t, 760, seed=5)
     ctx.set_source_rgba(1, 1, 1, 0.25); ctx.rectangle(0, 0, W, H); ctx.fill()
-    HERO.draw(ctx, W / 2, 1380, t, "shock", arms=(150, 30), sweat=True, shiver=0.6, size=2.7)
+    HERO.draw(ctx, W / 2, 1380, t, "shock", arms=(150, 30), props=(None, "purse"), sweat=True, shiver=0.6, size=2.7)
     if p > 0.2: text(ctx, "Me?!", 1380, 330, 150, INK, outline=PAL["white"], angle=0.1)
 
 def seized(ctx, t, p):
     street(ctx, t, 760, seed=7)
     for k, c in enumerate(CROWD[:4]): c.draw(ctx, 140 + k * 170, 880, t, "smug" if k % 2 else "neutral", look=(1, 0), arms=(110, 70), size=0.9)
     GUARD.draw(ctx, 1330, 1080, t, "angry", arms=(180 + 10 * math.sin(t * 3), -10), props=(None, "staff"), size=1.9)
-    HERO.draw(ctx, 900, 1080, t, "scared", arms=(150, 10), shiver=0.8, sweat=True, size=1.9)
+    HERO.draw(ctx, 900, 1080, t, "scared", arms=(150, 10), props=(None, "purse"), shiver=0.8, sweat=True, size=1.9)
+    if p > 0.2: bubble(ctx, 720, 260, "It wasn't me!", 70, tail=(60, 110))
 
 def march(ctx, t, p):
-    ctx.save(); ctx.translate(-p * 700, 0)
-    street(ctx, t, 760, seed=8, ext=1000); gatehouse(ctx, W + 900, 760, 1.0)
-    ctx.restore()
+    if not bg_image(ctx, "bg_street", t, zoom=1.35, pan=-0.8 + 1.6 * p):
+        ctx.save(); ctx.translate(-p * 700, 0)
+        street(ctx, t, 760, seed=8, ext=1000); gatehouse(ctx, W + 900, 760, 1.0)
+        ctx.restore()
     GUARD.draw(ctx, 1150, 1070, t, "angry", walk=t * 2.2, props=(None, "staff"), size=1.7)
     HERO.draw(ctx, 760, 1070, t, "sad", walk=t * 2.2, arms=(100, 80), size=1.7)
 
@@ -1014,5 +1016,67 @@ def card_end(ctx, t, p):
     rrect(ctx, -260, -70, 520, 140, 40); fill_stroke(ctx, PAL["scarlet"], 6); text(ctx, "SUBSCRIBE", 0, 28, 80, PAL["white"])
     ctx.restore()
     HERO.draw(ctx, 1500, 1080, t, "happy", arms=(110, -60 + 25 * math.sin(t * 6)), size=1.8)
+
+
+# =================================================================== new cold open (action-led)
+THIEF = Char(body="black", hat="hood", seed=33)
+MERCHANT = Char(body="purple", hat="cap", beard=rgb("6b4a2a"), body_w=1.45, seed=34)
+
+def _notes(ctx, x, y, t):
+    for k in range(2):
+        q = (t * 0.9 + k * 0.5) % 1
+        nx, ny = x + 40 * q + k * 30, y - 120 * q
+        ctx.new_path(); ctx.save(); ctx.translate(nx, ny); ctx.scale(1.3, 1); ctx.arc(0, 0, 11, 0, 6.3); ctx.restore()
+        ctx.set_source_rgba(0.13, 0.09, 0.07, 1 - q); ctx.fill()
+        ctx.move_to(nx + 13, ny); ctx.line_to(nx + 13, ny - 40); ctx.line_to(nx + 30, ny - 32)
+        ctx.set_source_rgba(0.13, 0.09, 0.07, 1 - q); ctx.set_line_width(5); ctx.stroke()
+
+def _you_label(ctx, x, y, a=1.0):
+    ctx.push_group()
+    text(ctx, "YOU", x + 230, y - 170, 130, PAL["scarlet"], outline=PAL["white"])
+    ctx.new_path(); ctx.move_to(x + 200, y - 140); ctx.curve_to(x + 190, y - 70, x + 130, y - 40, x + 70, y - 40)
+    ctx.set_source_rgb(1, 1, 1); ctx.set_line_width(26); ctx.set_line_cap(1); ctx.stroke_preserve()
+    ctx.set_source_rgb(*PAL["scarlet"]); ctx.set_line_width(14); ctx.stroke()
+    ctx.new_path(); ctx.move_to(x + 46, y - 40); ctx.line_to(x + 92, y - 66); ctx.line_to(x + 92, y - 14); ctx.close_path()
+    ctx.set_source_rgb(*PAL["scarlet"]); ctx.fill()
+    ctx.pop_group_to_source(); ctx.paint_with_alpha(a)
+
+def open_walk(ctx, t, p):
+    # tracking shot: background scrolls, crowd passes at two speeds, you stroll and whistle
+    if not bg_image(ctx, "bg_street", t, zoom=1.35, pan=-0.9 + 1.8 * p):
+        street(ctx, t, 760, seed=3)
+    birds(ctx, t, 4, 3)
+    for k, c in enumerate(CROWD[:4]):          # far crowd, slower
+        x = (k * 520 - p * 700 + 4000) % 2300 - 200
+        c.draw(ctx, x, 900, t, "neutral", walk=t * 1.6 + k, arms=(110, 70), size=0.8)
+    for k, c in enumerate(CROWD[4:7]):          # mid crowd walking the other way, behind you
+        x = (k * 700 + 300 - p * 1500 + 6000) % 2500 - 300
+        c.draw(ctx, x, 980, t, "neutral", walk=t * 2.2 + k, arms=(110, 70), size=1.1)
+    HERO.draw(ctx, 820, 1100, t, "happy", walk=t * 2.0, arms=(100, 80), props=(None, None), size=2.2)
+    _notes(ctx, 960, 500, t)
+    if p > 0.12: _you_label(ctx, 820, 470, min(1, (p - 0.12) / 0.08))
+
+def thief_cut(ctx, t, p):
+    if not bg_image(ctx, "bg_street", t, zoom=1.2, pan=0.4):
+        street(ctx, t, 760, seed=3)
+    MERCHANT.draw(ctx, 820, 1080, t, "smug", arms=(110, 75), size=2.0, talk=True)
+    prop(ctx, "purse", 820 + 66, 900, t)
+    sneak = seg(p, 0.0, 0.45)
+    tx = 1700 - 640 * sneak + (seg(p, 0.7, 1.0) * 900)
+    THIEF.draw(ctx, tx, 1080, t, "grin" if p > 0.45 else "smug", walk=t * (1.0 if p < 0.45 else 3.0), arms=(200, 170) if 0.4 < p < 0.7 else (110, 70), props=(None, "knife") if p < 0.7 else (None, "purse"), size=1.9)
+    if 0.42 < p < 0.68: text(ctx, "snip!", 1150, 520, 140, PAL["scarlet"], outline=PAL["white"], angle=-0.12)
+    if p < 0.4: text(ctx, "tiptoe...", 1500, 380, 70, PAL["white"], outline=INK)
+
+def purse_drop(ctx, t, p):
+    if not bg_image(ctx, "bg_street", t, zoom=1.2, pan=-0.3):
+        street(ctx, t, 760, seed=3)
+    tx = 1900 - 2200 * p
+    HERO.draw(ctx, 820, 1080, t, "neutral" if p < 0.5 else "shock", arms=(140, 40) if p > 0.45 else (100, 80), props=(None, "purse") if p > 0.5 else (None, None), size=1.9)
+    THIEF.draw(ctx, tx, 1080, t, "grin", walk=t * 4, arms=(200, -30), props=(None, "purse") if p < 0.5 else (None, None), size=1.9)
+    if 0.35 < p < 0.55:   # purse flying in an arc into your hands
+        q = (p - 0.35) / 0.2; px = 1140 - 260 * q; py = 760 - 180 * math.sin(math.pi * q)
+        prop(ctx, "purse", px, py, t)
+    if p > 0.55: text(ctx, "?", 960, 420, 180, PAL["white"], outline=INK)
+    if p > 0.7: text(ctx, "here, hold this!", 330, 170, 70, PAL["white"], outline=INK)
 
 SCENES = {k: v for k, v in globals().items() if callable(v) and getattr(v, "__module__", None) == __name__ and not k.startswith("_") and k not in ("ease", "seg")}

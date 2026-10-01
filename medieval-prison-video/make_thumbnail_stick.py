@@ -5,7 +5,7 @@ from PIL import Image, ImageFilter, ImageEnhance
 import cartoon as C
 from stick import Char
 W, H = 1920, 1080
-bg = Image.open("assets/bg/bg_cell.png").convert("RGB").resize((W, H), Image.LANCZOS)
+bg = Image.open("assets/bg_hd/bg_cell.png").convert("RGB").resize((W, H), Image.LANCZOS)
 bg = ImageEnhance.Color(bg.filter(ImageFilter.GaussianBlur(9))).enhance(1.15)
 bg = ImageEnhance.Brightness(bg).enhance(1.1)
 bg.save("build/_thumb_bg.png")

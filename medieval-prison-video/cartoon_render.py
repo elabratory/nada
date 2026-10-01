@@ -31,23 +31,47 @@ def draw_frame(ctx, t, shots, seg_times):
     s = active[0]
     p = min(1, max(0, (t - s["t0"]) / (s["t1"] - s["t0"])))
     key = s["key"]
+    move = s.get("move", "")
+    el = t - s["t0"]                       # seconds into the shot
     ctx.save()
-    # gentle camera push on every shot
-    z = 1.0 + 0.05 * p
-    ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2)
-    scenes.CUR["seg"] = s["seg"]["id"]
-    fn = scenes.SCENES.get(key.replace("card:", "card_"))
-    import cartoon
-    bg = BGMAP.get(key)
-    if bg and cartoon.bg_image(ctx, bg, t, zoom=1.04 + 0.05 * p + (0.25 if key == "sheet_rope" else 0)):
-        cartoon.SKIP["on"] = True
-        try:
-            if fn: fn(ctx, t, p)
-        finally:
-            cartoon.SKIP["on"] = False
-    elif fn: fn(ctx, t, p)
-    else: placeholder(ctx, t, p, key)
+    if move == "punch":                    # quick zoom-in punch, then slow push
+        q = min(1, el / 0.35); z = 1.18 - 0.16 * (1 - (1 - q) ** 3) + 0.03 * p
+    elif move == "track":
+        z = 1.0
+    else:
+        z = 1.0 + 0.05 * p
+    sx = sy = 0.0
+    if move in ("shake", "slam") and el < 0.7:
+        amp = 26 * (1 - el / 0.7)
+        sx, sy = amp * math.sin(el * 61), amp * math.cos(el * 47)
+    tilt = 0.0
+    if move in ("punch", "shake"):      # dutch angle like the reference
+        tilt = math.radians(4.5) * (1 if (int(s["t0"] * 10) % 2) else -1)
+    ctx.translate(W / 2 + sx, H / 2 + sy); ctx.rotate(tilt); ctx.scale(z * (1.06 if tilt else 1), z * (1.06 if tilt else 1)); ctx.translate(-W / 2, -H / 2)
+    def paint_scene():
+        scenes.CUR["seg"] = s["seg"]["id"]
+        fn = scenes.SCENES.get(key.replace("card:", "card_"))
+        import cartoon
+        bg = BGMAP.get(key)
+        if bg and cartoon.bg_image(ctx, bg, t, zoom=1.04 + 0.05 * p + (0.25 if key == "sheet_rope" else 0)):
+            cartoon.SKIP["on"] = True
+            try:
+                if fn: fn(ctx, t, p)
+            finally:
+                cartoon.SKIP["on"] = False
+        elif fn: fn(ctx, t, p)
+        else: placeholder(ctx, t, p, key)
+    if move == "whip" and el < 0.22:       # whip-pan: smeared copies sliding in
+        q = el / 0.22
+        ctx.push_group(); paint_scene(); pat = ctx.pop_group()
+        for k in range(6):
+            off = (1 - q) * 420 * (1 - k / 6)
+            ctx.save(); ctx.translate(off, 0); ctx.set_source(pat); ctx.paint_with_alpha(0.35 if k else 1.0); ctx.restore()
+    else:
+        paint_scene()
     ctx.restore()
+    if move == "slam" and el < 0.25:       # white flash on impact
+        ctx.set_source_rgba(1, 1, 1, 0.85 * (1 - el / 0.25)); ctx.paint()
     # chapter title cards + selected labels
     for seg in SEGMENTS:
         st = seg_times.get(seg["id"])

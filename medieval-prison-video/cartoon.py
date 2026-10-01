@@ -599,7 +599,7 @@ _BG = {}
 def bg_image(ctx, name, t=0.0, zoom=1.04, pan=0.0, dim=0.0):
     """Paint assets/bg/<name>.png to cover the frame. pan in [-1, 1] slides horizontally. Returns False if missing."""
     import os
-    path = f"assets/bg/{name}.png"
+    path = f"assets/bg_hd/{name}.png"
     if name not in _BG:
         if not os.path.exists(path):
             _BG[name] = None
@@ -607,7 +607,7 @@ def bg_image(ctx, name, t=0.0, zoom=1.04, pan=0.0, dim=0.0):
             from PIL import Image
             from PIL import ImageFilter, ImageEnhance
             im = Image.open(path).convert("RGB").resize((W + 400, int((W + 400) * 9 / 16)), Image.LANCZOS)
-            im = ImageEnhance.Color(im.filter(ImageFilter.GaussianBlur(1.6))).enhance(0.9)
+            im = im
             tmp = f"build/_bg_{name}.png"; im.save(tmp)
             _BG[name] = cairo.ImageSurface.create_from_png(tmp)
     surf = _BG[name]

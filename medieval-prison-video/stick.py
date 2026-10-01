@@ -50,21 +50,20 @@ class Char:
 
     def draw(self, ctx, x, y, t, expr="neutral", arms=(200, -20), props=(None, None), walk=0.0, face=1,
              look=(0, 0), shiver=0.0, talk=False, sweat=False, tears=False, eyes="dot", tilt=0.0, green=False, size=None):
-        s = (size or self.size) * 1.25
+        s = (size or self.size) * 1.12
         boil = int(t * 8) + self.seed * 13            # outline re-draw every 1/8 s
         bob = 3 * math.sin(t * 2.2 + self.seed) + (abs(math.sin(walk * math.pi)) * -9 if walk else 0)
         x += shiver * math.sin(t * 55) * 3 * s
         ctx.save(); ctx.translate(x, y + bob * s); ctx.rotate(tilt); ctx.scale(s, s)
         # ---- proportions (feet at y=0) : legs 100, torso 100, head ~95
-        hip_y, sh_y = -100, -192
+        hip_y, sh_y = -140, -228
         tw = 66 * self.body_w
         # legs (long sticks with a slight knee)
         for k, side in enumerate((-1, 1)):
             sw = math.sin(walk * math.pi + k * math.pi) * 26 if walk else 0
-            knee = (side * 12 + sw * 0.6 + 4, -52)
-            foot = (side * 14 + sw, -2)
-            stick_line(ctx, [(side * 14, hip_y + 6), knee, foot], boil + k, 7)
-            stick_line(ctx, [foot, (foot[0] + 14 * face, foot[1] + 1)], boil + k + 9, 7)
+            knee = (side * 12 + sw * 0.6 + 4, -72)
+            foot = (side * 16 + sw, -2)
+            stick_line(ctx, [(side * 14, hip_y + 6), knee, foot], boil + k, 8)
         # arms (behind torso if hanging behind? keep in front for readability) - computed now, drawn after torso
         arm_pts = []
         for i, side in enumerate((-1, 1)):
