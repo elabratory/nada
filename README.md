@@ -69,3 +69,13 @@ assets/fonts/        caption font (SIL Open Font License)
 - **"Missing OPENAI_API_KEY / ANTHROPIC_API_KEY"**: create `.env.local` from `.env.example` and restart the dev server.
 - **FFmpeg not found after install**: your network may have blocked the `ffmpeg-static` binary download. Re-run `npm install`, or install FFmpeg yourself and set `FFMPEG_PATH`.
 - **A MOV preview won't play in the browser**: some MOV files (e.g. HEVC from iPhones) aren't supported by every browser. Processing still works, and the generated clips are always H.264 MP4.
+
+## Long-form compilations
+
+`scripts/build-compilation.mjs` builds a 16:9 compilation (title cards, clips, on-screen text, background music, no voiceover) from a `timeline.json`:
+
+```bash
+npm run compilation -- content/disrespectful-ufc-moments
+```
+
+See `content/disrespectful-ufc-moments/footage.md` for the clip list and the timeline fields.

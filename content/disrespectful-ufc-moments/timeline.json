@@ -1,0 +1,250 @@
+{
+  "output": "disrespectful-ufc-moments.mp4",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "music": { "file": "music.mp3", "volume": 0.18 },
+  "segments": [
+    {
+      "type": "clip", "file": "clips/masvidal-askren.mp4", "start": "0:00", "duration": 8, "freezeEnd": 1.5,
+      "find": "Masvidal vs Askren (UFC 239): the flying knee, then Masvidal flopping next to Askren",
+      "texts": [
+        { "at": 1, "duration": 3, "style": "caption", "text": "THE FIGHT LASTED 5 SECONDS" },
+        { "at": 5, "style": "punch", "text": "THE DISRESPECT LASTED LONGER" }
+      ]
+    },
+    { "type": "card", "kicker": "UFC", "title": "THE MOST DISRESPECTFUL MOMENTS", "subtitle": "showboating · pointing · hands behind the back · taunts · celebrations", "duration": 5 },
+
+    { "type": "card", "kicker": "CHAPTER 1", "title": "HANDS BEHIND THE BACK", "subtitle": "\"Hit me. I dare you.\"", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/silva-griffin.mp4", "start": "0:00", "duration": 30, "freezeEnd": 1,
+      "find": "Silva vs Griffin (UFC 101, 2009): Silva hands at his knees, slipping everything, then the backpedalling jab KO",
+      "label": "ANDERSON SILVA vs FORREST GRIFFIN · UFC 101 · 2009",
+      "texts": [
+        { "at": 2, "duration": 6, "text": "A FORMER CHAMPION..." },
+        { "at": 9, "duration": 6, "text": "SILVA'S HANDS: AT HIS KNEES" },
+        { "at": 22, "style": "punch", "text": "KO WHILE BACKING UP" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/silva-bonnar.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "Silva vs Bonnar (UFC 153, 2012): Silva leaning on the fence with hands down, then the knee to the body",
+      "label": "ANDERSON SILVA vs STEPHAN BONNAR · UFC 153 · 2012",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "BACK ON THE CAGE. HANDS DOWN. ON PURPOSE." },
+        { "at": 10, "duration": 6, "text": "\"RELAX, I GOT THIS\"" },
+        { "at": 19, "style": "punch", "text": "ONE KNEE." }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/mcgregor-alvarez.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "McGregor vs Alvarez (UFC 205, 2016), round 2: McGregor with hands clasped behind his back, then the finish",
+      "label": "CONOR McGREGOR vs EDDIE ALVAREZ · UFC 205 · 2016",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "TITLE FIGHT. MADISON SQUARE GARDEN." },
+        { "at": 10, "duration": 6, "text": "HANDS. BEHIND. HIS. BACK." },
+        { "at": 19, "style": "punch", "text": "FIRST EVER 2-DIVISION CHAMP" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/silva-weidman.mp4", "start": "0:00", "duration": 38, "freezeEnd": 2,
+      "find": "Silva vs Weidman (UFC 162, 2013): Silva clowning, pretending to be rocked, then the left hook in round 2",
+      "label": "ANDERSON SILVA vs CHRIS WEIDMAN · UFC 162 · 2013",
+      "texts": [
+        { "at": 2, "duration": 8, "text": "BUT SOMETIMES... IT BACKFIRES" },
+        { "at": 12, "duration": 10, "text": "SILVA PRETENDS TO BE HURT" },
+        { "at": 30, "style": "punch", "text": "7-YEAR REIGN: OVER" }
+      ]
+    },
+
+    { "type": "card", "kicker": "CHAPTER 2", "title": "TAUNTS", "subtitle": "\"Let's talk now.\"", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/nick-diaz-silva.mp4", "start": "0:00", "duration": 20,
+      "find": "Nick Diaz vs Anderson Silva (UFC 183, 2015), round 1: Nick lying flat on the mat, waving Silva in",
+      "label": "NICK DIAZ vs ANDERSON SILVA · UFC 183 · 2015",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "HOW DO YOU TAUNT THE KING OF TAUNTING?" },
+        { "at": 10, "style": "punch", "text": "YOU LIE DOWN." }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/nate-mcgregor-slaps.mp4", "start": "0:00", "duration": 20,
+      "find": "Nate Diaz vs McGregor (UFC 196, 2016): the open-hand slaps and pointing in Conor's face",
+      "label": "NATE DIAZ vs CONOR McGREGOR · UFC 196 · 2016",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "NOT PUNCHES. SLAPS." },
+        { "at": 11, "style": "punch", "text": "THE STOCKTON SLAP" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/nate-pellegrino.mp4", "start": "0:00", "duration": 10,
+      "find": "Nate Diaz vs Kurt Pellegrino (2008): both middle fingers up while holding the triangle choke",
+      "label": "NATE DIAZ vs KURT PELLEGRINO · 2008",
+      "texts": [{ "at": 1, "text": "MIDDLE FINGERS UP... MID-TRIANGLE CHOKE" }]
+    },
+    {
+      "type": "clip", "file": "clips/nate-mcgregor-202.mp4", "start": "0:00", "duration": 10,
+      "find": "Nate Diaz vs McGregor 2 (UFC 202, 2016): Nate clinching by Conor's corner, swearing at his coaches with a middle finger",
+      "label": "NATE DIAZ vs CONOR McGREGOR 2 · UFC 202 · 2016",
+      "texts": [{ "at": 1, "text": "FLIPPING OFF CONOR'S COACHES. MID-ROUND." }]
+    },
+    {
+      "type": "clip", "file": "clips/garbrandt-cruz.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "Garbrandt vs Cruz (UFC 207, 2016): Garbrandt doing the robot after dropping Cruz, pointing, hands on hips",
+      "label": "CODY GARBRANDT vs DOMINICK CRUZ · UFC 207 · 2016",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "CRUZ: BEST FOOTWORK IN THE SPORT" },
+        { "at": 10, "duration": 6, "text": "GARBRANDT: *DOES THE ROBOT*" },
+        { "at": 18, "style": "punch", "text": "AND THE NEW..." }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/khabib-mcgregor.mp4", "start": "0:00", "duration": 35, "freezeEnd": 1.5,
+      "find": "Khabib vs McGregor (UFC 229, 2018), round 2 ground and pound, then the end of round 3: Khabib saying 'Let's talk'",
+      "label": "KHABIB NURMAGOMEDOV vs CONOR McGREGOR · UFC 229 · 2018",
+      "texts": [
+        { "at": 2, "duration": 9, "text": "CONOR INSULTED HIS FAMILY, TEAM AND RELIGION" },
+        { "at": 12, "duration": 8, "style": "punch", "text": "\"LET'S TALK NOW.\"" },
+        { "at": 22, "duration": 7, "text": "CONOR: \"IT'S ONLY BUSINESS\"" },
+        { "at": 30, "style": "punch", "text": "\"LET'S TALK.\"" }
+      ]
+    },
+
+    { "type": "card", "kicker": "CHAPTER 3", "title": "POINTING AT THE OPPONENT", "subtitle": "\"Right here.\"", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/holloway-gaethje.mp4", "start": "0:00", "duration": 40, "freezeEnd": 2,
+      "find": "Holloway vs Gaethje (UFC 300, 2024): the last 10 seconds of round 5, Holloway pointing at the canvas, KO with 1 second left",
+      "label": "MAX HOLLOWAY vs JUSTIN GAETHJE · UFC 300 · 2024",
+      "texts": [
+        { "at": 2, "duration": 8, "text": "HOLLOWAY IS WINNING ON THE CARDS" },
+        { "at": 11, "duration": 8, "text": "10 SECONDS LEFT. HE COULD JUST COAST." },
+        { "at": 20, "duration": 8, "text": "INSTEAD HE POINTS AT THE FLOOR" },
+        { "at": 34, "style": "punch", "text": "1 SECOND LEFT." }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/holloway-kattar.mp4", "start": "0:00", "duration": 30,
+      "find": "Holloway vs Kattar (UFC Fight Island 7, 2021), round 5: Holloway turning to the commentary desk mid-exchange",
+      "label": "MAX HOLLOWAY vs CALVIN KATTAR · UFC FIGHT ISLAND 7 · 2021",
+      "texts": [
+        { "at": 2, "duration": 9, "text": "ROUND 5. BREAKING THE STRIKES-LANDED RECORD." },
+        { "at": 12, "duration": 8, "text": "...AND TALKING TO THE COMMENTATORS" },
+        { "at": 21, "style": "punch", "text": "\"I'M THE BEST BOXER IN THE UFC!\"" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/edwards-usman.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "Edwards vs Usman (UFC 278, 2022): the round 5 head kick, Edwards climbing the fence, 'Look at me now' into the camera",
+      "label": "LEON EDWARDS vs KAMARU USMAN · UFC 278 · 2022",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "LOSING. UNDER A MINUTE LEFT." },
+        { "at": 16, "style": "punch", "text": "\"LOOK AT ME NOW!\"" }
+      ]
+    },
+
+    { "type": "card", "kicker": "CHAPTER 4", "title": "SHOWBOATING", "subtitle": "\"I don't need to watch.\"", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/hunt-nelson.mp4", "start": "0:00", "duration": 20, "freezeEnd": 1,
+      "find": "Mark Hunt vs Roy Nelson (UFC Japan, 2014): the uppercut, then Hunt walking away before the ref steps in",
+      "label": "MARK HUNT vs ROY NELSON · UFC JAPAN · 2014",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "NELSON HAD NEVER BEEN KNOCKED OUT" },
+        { "at": 12, "style": "punch", "text": "THE WALK-OFF KO" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/mcgregor-aldo-belt.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "UFC World Tour press conference in Dublin (March 2015): McGregor grabbing Aldo's belt off the table",
+      "label": "McGREGOR STEALS ALDO'S BELT · DUBLIN · 2015",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "THE CHAMP'S BELT. ON HIS TABLE." },
+        { "at": 10, "duration": 7, "text": "NOT ANYMORE." },
+        { "at": 18, "style": "punch", "text": "UFC 194: 13-SECOND KO" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/rousey-tate.mp4", "start": "0:00", "duration": 18,
+      "find": "Rousey vs Tate 2 (UFC 168, 2013): after the armbar, Tate offering her hand and Rousey turning away",
+      "label": "RONDA ROUSEY vs MIESHA TATE · UFC 168 · 2013",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "TATE OFFERS A HANDSHAKE..." },
+        { "at": 10, "style": "punch", "text": "DENIED." }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/michel-pereira-roberts.mp4", "start": "0:00", "duration": 25, "freezeEnd": 1,
+      "find": "Michel Pereira vs Danny Roberts (UFC Rochester, 2019): off-the-fence superman punch attempts, rolling thunder, then the KO",
+      "label": "MICHEL PEREIRA vs DANNY ROBERTS · UFC ROCHESTER · 2019",
+      "texts": [
+        { "at": 2, "duration": 8, "text": "UFC DEBUT. FULL CIRCUS MODE." },
+        { "at": 18, "style": "punch", "text": "64 SECONDS." }
+      ]
+    },
+
+    { "type": "card", "kicker": "CHAPTER 5", "title": "CRAZY CELEBRATIONS", "subtitle": "\"After the bell.\"", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/tito-grave.mp4", "start": "0:00", "duration": 12,
+      "find": "Tito Ortiz after any UFC win: the grave-digger celebration",
+      "label": "TITO ORTIZ · THE GRAVE DIGGER",
+      "texts": [{ "at": 1, "text": "WINS. DIGS YOUR GRAVE. BURIES YOU." }]
+    },
+    {
+      "type": "clip", "file": "clips/bj-penn-stevenson.mp4", "start": "0:00", "duration": 12,
+      "find": "BJ Penn vs Joe Stevenson (UFC 80, 2008): after the choke, Penn licking blood off his gloves",
+      "label": "BJ PENN vs JOE STEVENSON · UFC 80 · 2008",
+      "texts": [{ "at": 1, "text": "LICKED HIS OPPONENT'S BLOOD OFF HIS GLOVES" }]
+    },
+    {
+      "type": "clip", "file": "clips/bisping-rivera.mp4", "start": "0:00", "duration": 15,
+      "find": "Bisping vs Rivera (UFC 127, 2011): after the KO, Bisping going to Rivera's corner and spitting toward them",
+      "label": "MICHAEL BISPING vs JORGE RIVERA · UFC 127 · 2011",
+      "texts": [{ "at": 1, "text": "WINS. WALKS TO THEIR CORNER. SPITS." }]
+    },
+    {
+      "type": "clip", "file": "clips/lewis-nascimento.mp4", "start": "0:00", "duration": 15,
+      "find": "Derrick Lewis vs Rodrigo Nascimento (UFC St. Louis, 2024): Lewis stripping off his shorts and throwing his cup into the media row",
+      "label": "DERRICK LEWIS vs RODRIGO NASCIMENTO · UFC ST. LOUIS · 2024",
+      "texts": [
+        { "at": 1, "duration": 7, "text": "STRIPS TO HIS UNDERWEAR..." },
+        { "at": 8, "style": "punch", "text": "CUP → MEDIA ROW" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/masvidal-askren.mp4", "start": "0:00", "duration": 20,
+      "find": "Masvidal vs Askren (UFC 239, 2019): the knee, the extra punches, the mocking flop next to Askren",
+      "label": "JORGE MASVIDAL vs BEN ASKREN · UFC 239 · 2019",
+      "texts": [
+        { "at": 1, "duration": 6, "text": "FASTEST KO IN UFC HISTORY" },
+        { "at": 8, "duration": 5, "text": "+ A FEW EXTRA PUNCHES" },
+        { "at": 13, "style": "punch", "text": "+ THE FLOP" }
+      ]
+    },
+    {
+      "type": "clip", "file": "clips/adesanya-costa.mp4", "start": "0:00", "duration": 12,
+      "find": "Adesanya vs Costa (UFC 253, 2020): the post-stoppage celebration as the ref pulls him off",
+      "label": "ISRAEL ADESANYA vs PAULO COSTA · UFC 253 · 2020",
+      "texts": [{ "at": 1, "text": "COSTA STILL HASN'T FORGIVEN HIM" }]
+    },
+
+    { "type": "card", "kicker": "THE MOST DISRESPECTFUL", "title": "#1", "subtitle": "six years in the making", "duration": 3 },
+    {
+      "type": "clip", "file": "clips/pereira-son-2017.jpg", "start": "0:00", "duration": 10,
+      "find": "Photo/clip: Pereira's son lying next to a knocked-out Adesanya (Glory kickboxing, 2017); a still image (jpg/png) works",
+      "label": "GLORY KICKBOXING · 2017",
+      "texts": [{ "at": 1, "text": "2017: PEREIRA KO'S ADESANYA. PEREIRA'S SON LIES DOWN NEXT TO HIM." }]
+    },
+    {
+      "type": "clip", "file": "clips/adesanya-pereira-287.mp4", "start": "0:00", "duration": 35, "freezeEnd": 2.5,
+      "find": "Adesanya vs Pereira 2 (UFC 287, 2023): the two right hands, then the bow-and-arrow and Adesanya lying down beside Pereira",
+      "label": "ISRAEL ADESANYA vs ALEX PEREIRA 2 · UFC 287 · 2023",
+      "texts": [
+        { "at": 2, "duration": 7, "text": "0–3 AGAINST PEREIRA" },
+        { "at": 10, "duration": 7, "text": "THEN..." },
+        { "at": 18, "duration": 7, "text": "PEREIRA'S OWN ARROWS" },
+        { "at": 26, "style": "punch", "text": "...AND HE LIES DOWN NEXT TO HIM" }
+      ]
+    },
+
+    { "type": "card", "kicker": "YOUR TURN", "title": "WHICH WAS THE MOST DISRESPECTFUL?", "subtitle": "comment below · subscribe for more", "duration": 8 }
+  ]
+}

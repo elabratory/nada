@@ -7,3 +7,9 @@ storage/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# compilation projects: footage, renders and build files stay local
+content/*/clips/
+content/*/.build/
+content/*/*.mp4
+content/*/music.mp3
