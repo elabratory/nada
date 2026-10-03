@@ -31,27 +31,27 @@ Output: `content/disrespectful-ufc-moments/disrespectful-ufc-moments.mp4` (1920�
 | At | Moment | From |
 |----|--------|------|
 | 0:00 | Cold open: McGregor late to his own press conference | press 43:07 |
-| 0:14 | **Round 1: Inside the Octagon** | |
-| 0:17 | Holloway points at the commentators: "I'm the best boxer in the UFC" | funniest 1:56 |
-| 0:53 | Garbrandt's death stare, then "Fight! Fight! Fight!" | funniest 14:26 |
-| 1:36 | Adesanya stops Costa: "Too easy… you're mad" | funniest 16:58 |
-| 2:17 | **Round 2: Press conference chaos** | |
-| 2:20 | McGregor takes Aldo's belt, Dublin | press 14:20 |
-| 3:13 | McGregor vs Diaz: bottles flying | press 40:00 |
-| 3:49 | Khabib: "Send location… you'll do nothing" | press 26:27 |
-| 4:34 | Kevin Lee brings up Chiesa's mom | press 37:39 |
-| 5:04 | Topuria: "I walk like a king in your street" | press 7:21 |
-| 5:38 | O'Malley vs Garbrandt | press 1:34 |
-| 6:08 | Chael Sonnen: "replace him with a $9.99 app" | press 5:09 |
-| 6:46 | Covington: "Nobody came here to see him" | press 8:52 |
-| 7:12 | McGregor: "Who the f*** is that guy?" | press 41:24 |
-| 7:29 | **Round 3: The Ultimate Fighter** | |
-| 7:32 | McGregor to Faber: "Dress your age" | tuf 3:43 |
-| 7:50 | McGregor vs Garbrandt: "Do something then" | tuf 14:53 |
-| 8:28 | McGregor shoves Chandler | tuf 45:36 |
-| 9:01 | **Final round: McGregor** | |
-| 9:04 | "Sorry I'm late…" | press 42:52 |
-| 9:32 | "I run New York City" | press 44:38 |
+| 0:15 | **Round 1: Inside the Octagon** | |
+| 0:18 | Holloway points at the commentators: "I'm the best boxer in the UFC" | funniest 1:56 |
+| 0:54 | Garbrandt's death stare, then "Fight! Fight! Fight!" | funniest 14:26 |
+| 1:38 | Adesanya stops Costa: "Too easy… you're mad" | funniest 16:58 |
+| 2:19 | **Round 2: Press conference chaos** | |
+| 2:22 | McGregor takes Aldo's belt, Dublin | press 14:20 |
+| 3:15 | McGregor vs Diaz: bottles flying | press 40:00 |
+| 3:51 | Khabib: "Send location… you'll do nothing" | press 26:27 |
+| 4:36 | Kevin Lee brings up Chiesa's mom | press 37:39 |
+| 5:06 | Topuria: "I walk like a king in your street" | press 7:21 |
+| 5:40 | O'Malley vs Garbrandt | press 1:34 |
+| 6:10 | Chael Sonnen: "replace him with a $9.99 app" | press 5:09 |
+| 6:48 | Covington: "Nobody came here to see him" | press 8:52 |
+| 7:14 | McGregor: "Who the f*** is that guy?" | press 41:24 |
+| 7:31 | **Round 3: The Ultimate Fighter** | |
+| 7:34 | McGregor to Faber: "Dress your age" | tuf 3:43 |
+| 7:52 | McGregor vs Garbrandt: "Do something then" | tuf 14:53 |
+| 8:30 | McGregor shoves Chandler | tuf 45:36 |
+| 9:03 | **Final round: McGregor** | |
+| 9:06 | "Sorry I'm late…" | press 42:52 |
+| 9:34 | "I run New York City" | press 44:38 |
 | 10:07 | End card | |
 
 ## Fine-tuning
