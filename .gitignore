@@ -10,6 +10,7 @@ next-env.d.ts
 
 # compilation projects: footage, renders and build files stay local
 content/*/clips/
+content/*/sources/
 content/*/.build/
 content/*/*.mp4
 content/*/music.mp3
