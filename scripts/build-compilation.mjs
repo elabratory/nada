@@ -6,75 +6,9 @@
 //
 // Clips whose file is missing are rendered as labelled placeholders, so the whole
 // edit can be previewed (timing, text, order) before any footage is downloaded.
-import { spawn } from "node:child_process";
 import { existsSync, promises as fs } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const FONTS_DIR = path.join(ROOT, "assets", "fonts");
-
-async function ffmpegPath() {
-  if (process.env.FFMPEG_PATH?.trim()) return process.env.FFMPEG_PATH.trim();
-  try {
-    const mod = await import("ffmpeg-static");
-    if (mod.default && existsSync(mod.default)) return mod.default;
-  } catch {}
-  return "ffmpeg";
-}
-
-const FFMPEG = await ffmpegPath();
-
-function run(args, cwd) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(FFMPEG, ["-hide_banner", "-nostdin", ...args], { cwd, stdio: ["ignore", "ignore", "pipe"] });
-    let stderr = "";
-    proc.stderr.on("data", (c) => {
-      stderr += c.toString();
-      if (stderr.length > 200_000) stderr = stderr.slice(-100_000);
-    });
-    proc.on("error", reject);
-    proc.on("close", (code) => (code === 0 ? resolve(stderr) : reject(new Error(stderr.slice(-3000)))));
-  });
-}
-
-async function hasAudio(file) {
-  const out = await run(["-i", file], undefined).catch((e) => e.message);
-  return /Stream #\d+:\d+.*Audio:/.test(out);
-}
-
-/** "1:23", "1:02:03", "83.5" or 83.5 -> seconds. */
-function secs(v) {
-  if (v === undefined || v === null || v === "") return 0;
-  if (typeof v === "number") return v;
-  return String(v)
-    .split(":")
-    .reduce((acc, part) => acc * 60 + Number(part), 0);
-}
-
-/**
- * Clip start/end can be a plain time, or a named mark from the timeline's "marks" map plus an
- * offset, e.g. "pinas-12" or "pinas+2.5". Marks let several segments (live + replay) share one
- * timestamp. Returns { t, missing } where missing names a mark that has no time set yet.
- */
-function resolveTime(v, marks) {
-  const m = typeof v === "string" && v.trim().match(/^([a-z_][\w-]*?)\s*(?:([+-])\s*([\d.]+))?$/i);
-  if (!m || !(m[1] in marks)) return { t: secs(v), missing: null };
-  const offset = m[2] ? (m[2] === "-" ? -1 : 1) * Number(m[3]) : 0;
-  const mark = marks[m[1]];
-  if (mark === null || mark === undefined || mark === "") return { t: offset, missing: m[1] };
-  return { t: secs(mark) + offset, missing: null };
-}
-
-function ts(t) {
-  const cs = Math.max(0, Math.round(t * 100));
-  const h = Math.floor(cs / 360000);
-  const m = Math.floor((cs % 360000) / 6000);
-  const s = Math.floor((cs % 6000) / 100);
-  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(cs % 100).padStart(2, "0")}`;
-}
-
-const esc = (s) => String(s).replace(/[{}\\]/g, "").replace(/\n/g, "\\N");
+import { copyFonts, esc, finishWithMusic, fmt, hasAudio, resolveTime, run, secs, ts } from "./lib/media.mjs";
 
 // ASS colours are &HAABBGGRR.
 const ACCENT = "&H003D6AFF"; // #FF6A3D
@@ -210,10 +144,6 @@ async function renderSegment(seg, i, ctx) {
   return { out, duration, missing };
 }
 
-const fmt = (t) => {
-  const r = Math.round(t);
-  return `${Math.floor(r / 60)}:${String(r % 60).padStart(2, "0")}`;
-};
 
 async function main() {
   const projectDir = path.resolve(process.argv[2] ?? ".");
@@ -223,10 +153,7 @@ async function main() {
   const h = tl.height ?? 1080;
   const fps = tl.fps ?? 30;
   const workDir = path.join(projectDir, ".build");
-  await fs.mkdir(path.join(workDir, "fonts"), { recursive: true });
-  for (const f of await fs.readdir(FONTS_DIR)) {
-    if (/\.(ttf|otf)$/.test(f)) await fs.copyFile(path.join(FONTS_DIR, f), path.join(workDir, "fonts", f));
-  }
+  await copyFonts(workDir);
 
   const ctx = { w, h, fps, workDir, projectDir, marks: tl.marks ?? {}, preset: process.argv.includes("--fast") ? "ultrafast" : "medium" };
   const parts = [];
@@ -244,20 +171,8 @@ async function main() {
 
   const output = path.resolve(projectDir, tl.output ?? "compilation.mp4");
   const music = tl.music?.file ? path.resolve(projectDir, tl.music.file) : null;
-  if (music && existsSync(music)) {
-    const vol = tl.music.volume ?? 0.2;
-    await run(
-      [
-        "-y", "-i", joined, "-stream_loop", "-1", "-i", music,
-        "-filter_complex", `[1:a]volume=${vol},afade=t=out:st=${Math.max(0, total - 3).toFixed(2)}:d=3[m];[0:a][m]amix=inputs=2:duration=first:normalize=0[a]`,
-        "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", output,
-      ],
-      workDir,
-    );
-  } else {
-    if (music) console.warn(`Music file not found, skipping: ${tl.music.file}`);
-    await fs.copyFile(path.join(workDir, joined), output);
-  }
+  const mixed = await finishWithMusic(workDir, joined, output, music, tl.music?.volume ?? 0.2, total);
+  if (music && !mixed) console.warn(`Music file not found, skipping: ${tl.music.file}`);
 
   const missing = parts.filter((p) => p.missing).length;
   console.log(`\nDone: ${path.relative(process.cwd(), output)} (${fmt(total)})`);

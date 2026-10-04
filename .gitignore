@@ -12,5 +12,6 @@ next-env.d.ts
 content/*/clips/
 content/*/sources/
 content/*/.build/
+content/*/.build-short/
 content/*/*.mp4
 content/*/music.mp3

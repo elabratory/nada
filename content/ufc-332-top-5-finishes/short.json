@@ -1,0 +1,35 @@
+{
+  "output": "ufc-332-top-5-short.mp4",
+  "source": "sources/ufc332.mp4",
+  "marks": "timeline.json",
+  "music": { "file": "music.mp3", "volume": 0.15 },
+  "title": [["Ranking ", "white"], ["UFC 332", "yellow"], ["\n"], ["Best ", "blue"], ["Finishes", "white"]],
+  "slots": 5,
+  "clips": [
+    {
+      "rank": 5, "label": "Kopylov's left",
+      "start": "kopylov-4.5", "end": "kopylov+2.5", "reveal": "kopylov",
+      "replay": { "start": "kopylov-1", "end": "kopylov+1", "speed": 0.5 }
+    },
+    {
+      "rank": 4, "label": "Figgy folded",
+      "start": "talbott-4.5", "end": "talbott+2.5", "reveal": "talbott",
+      "replay": { "start": "talbott-1", "end": "talbott+1", "speed": 0.5 }
+    },
+    {
+      "rank": 3, "label": "Heard the scream",
+      "start": "rodriguez-4.5", "end": "rodriguez+2.5", "reveal": "rodriguez",
+      "replay": { "start": "rodriguez-1", "end": "rodriguez+1", "speed": 0.5 }
+    },
+    {
+      "rank": 2, "label": "HW debut knee",
+      "start": "walker-4.5", "end": "walker+2.5", "reveal": "walker",
+      "replay": { "start": "walker-1", "end": "walker+1", "speed": 0.5 }
+    },
+    {
+      "rank": 1, "label": "Shadow realm",
+      "start": "pinas-5", "end": "pinas+3", "reveal": "pinas",
+      "replay": { "start": "pinas-1", "end": "pinas+1", "speed": 0.5, "freezeEnd": 1.5 }
+    }
+  ]
+}

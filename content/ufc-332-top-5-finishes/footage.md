@@ -1,6 +1,11 @@
 # UFC 332: Top 5 Finishes, ranked
 
-A 3:40 countdown from #5 to #1, plus an honourable mention. Each finish gets a title card, the live finish, and a slow-motion replay with on-screen text. There's no voiceover.
+Two videos come from the same six timestamps:
+
+- **Short** (`ufc-332-top-5-short.mp4`, 58 s, 1080×1920): the "Ranking …" style. A coloured title sits in the black top bar, the clip fills the middle, and a 1–5 list down the left fills in as each finish lands. It goes #5 to #1, each with a slow-mo replay. Settings are in `short.json`.
+- **Long** (`ufc-332-top-5-finishes.mp4`, 3:40, 1920×1080): a countdown with title cards, an honourable mention, and on-screen quotes. Settings are in `timeline.json`.
+
+There's no voiceover in either.
 
 ## The ranking (and why)
 
@@ -47,10 +52,21 @@ Each mark drives two clips: the live finish (from about 12 seconds before) and t
 ## 3. Build
 
 ```bash
-npm run compilation -- content/ufc-332-top-5-finishes --fast   # quick check
-npm run compilation -- content/ufc-332-top-5-finishes          # final
+npm run short -- content/ufc-332-top-5-finishes                 # the vertical Short
+npm run compilation -- content/ufc-332-top-5-finishes           # the long 16:9 version
 ```
 
-Output: `content/ufc-332-top-5-finishes/ufc-332-top-5-finishes.mp4`. Any mark you haven't filled in shows as a red slide telling you which one to set.
+Add `--fast` to either command for a quick check. Any mark you haven't filled in shows as a red slide telling you which one to set.
+
+### Tweaking the Short (`short.json`)
+
+| Field | What it does |
+|-------|--------------|
+| `title` | The two-line title, as `[text, colour]` pairs (white, yellow, blue, red). `["\n"]` starts the second line. |
+| `label` | The text that fills that rank's slot, e.g. `"Shadow realm"` |
+| `start` / `end` | The live clip, relative to the mark, e.g. `"pinas-5"` to `"pinas+3"` |
+| `reveal` | When the label pops into its slot (defaults to the moment of impact) |
+| `replay` | The slow-mo replay window and `speed` (0.5 = half speed) |
+| `cropX` | If a fighter is cut off at the side, slide the crop: `0` = left, `0.5` = centre, `1` = right |
 
 Optional: drop a no-copyright track in as `music.mp3`.

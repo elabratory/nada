@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "check": "node scripts/check-setup.mjs",
-    "compilation": "node scripts/build-compilation.mjs"
+    "compilation": "node scripts/build-compilation.mjs",
+    "short": "node scripts/build-ranking-short.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
