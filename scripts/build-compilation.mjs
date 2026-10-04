@@ -52,6 +52,20 @@ function secs(v) {
     .reduce((acc, part) => acc * 60 + Number(part), 0);
 }
 
+/**
+ * Clip start/end can be a plain time, or a named mark from the timeline's "marks" map plus an
+ * offset, e.g. "pinas-12" or "pinas+2.5". Marks let several segments (live + replay) share one
+ * timestamp. Returns { t, missing } where missing names a mark that has no time set yet.
+ */
+function resolveTime(v, marks) {
+  const m = typeof v === "string" && v.trim().match(/^([a-z_][\w-]*?)\s*(?:([+-])\s*([\d.]+))?$/i);
+  if (!m || !(m[1] in marks)) return { t: secs(v), missing: null };
+  const offset = m[2] ? (m[2] === "-" ? -1 : 1) * Number(m[3]) : 0;
+  const mark = marks[m[1]];
+  if (mark === null || mark === undefined || mark === "") return { t: offset, missing: m[1] };
+  return { t: secs(mark) + offset, missing: null };
+}
+
 function ts(t) {
   const cs = Math.max(0, Math.round(t * 100));
   const h = Math.floor(cs / 360000);
@@ -121,21 +135,31 @@ async function renderSegment(seg, i, ctx) {
   const enc = ["-c:v", "libx264", "-preset", ctx.preset, "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"];
 
   const file = seg.file ? path.resolve(projectDir, seg.file) : null;
-  const missing = seg.type === "clip" && !(file && existsSync(file));
+  let missing = seg.type === "clip" && !(file && existsSync(file));
+  let missingMark = null;
   const speed = seg.speed ?? 1;
   const freeze = secs(seg.freezeEnd);
   let duration;
   if (seg.type === "card") duration = secs(seg.duration ?? 3);
   else {
-    const start = secs(seg.start);
-    const end = seg.end !== undefined ? secs(seg.end) : start + secs(seg.duration ?? 10);
-    if (end <= start) throw new Error(`Segment ${i} (${seg.label ?? seg.file}): end must be after start`);
-    duration = (end - start) / speed + freeze;
-    seg = { ...seg, _start: start, _end: end };
+    const s = resolveTime(seg.start, ctx.marks);
+    const e = seg.end !== undefined ? resolveTime(seg.end, ctx.marks) : { t: s.t + secs(seg.duration ?? 10), missing: s.missing };
+    missingMark = s.missing ?? e.missing;
+    if (missingMark) missing = true;
+    if (e.t <= s.t) throw new Error(`Segment ${i} (${seg.label ?? seg.file}): end must be after start`);
+    duration = (e.t - s.t) / speed + freeze;
+    seg = { ...seg, _start: Math.max(0, s.t), _end: e.t };
   }
 
   const segForText = missing
-    ? { ...seg, texts: [{ style: "punch", text: "CLIP NEEDED" }, { style: "caption", text: seg.find ?? seg.file ?? "" }], caption: undefined }
+    ? {
+        ...seg,
+        texts: [
+          { style: "punch", text: missingMark ? `SET "${missingMark}" IN marks` : "CLIP NEEDED" },
+          { style: "caption", text: seg.find ?? seg.file ?? "" },
+        ],
+        caption: undefined,
+      }
     : seg;
   await fs.writeFile(path.join(workDir, `${base}.ass`), `${assHeader(w, h)}\n${textEvents(segForText, duration, w, h).join("\n")}\n`, "utf8");
   const subs = `subtitles=${base}.ass:fontsdir=fonts`;
@@ -186,7 +210,10 @@ async function renderSegment(seg, i, ctx) {
   return { out, duration, missing };
 }
 
-const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, "0")}`;
+const fmt = (t) => {
+  const r = Math.round(t);
+  return `${Math.floor(r / 60)}:${String(r % 60).padStart(2, "0")}`;
+};
 
 async function main() {
   const projectDir = path.resolve(process.argv[2] ?? ".");
@@ -201,7 +228,7 @@ async function main() {
     if (/\.(ttf|otf)$/.test(f)) await fs.copyFile(path.join(FONTS_DIR, f), path.join(workDir, "fonts", f));
   }
 
-  const ctx = { w, h, fps, workDir, projectDir, preset: process.argv.includes("--fast") ? "ultrafast" : "medium" };
+  const ctx = { w, h, fps, workDir, projectDir, marks: tl.marks ?? {}, preset: process.argv.includes("--fast") ? "ultrafast" : "medium" };
   const parts = [];
   let total = 0;
   for (const [i, seg] of tl.segments.entries()) {
@@ -234,7 +261,7 @@ async function main() {
 
   const missing = parts.filter((p) => p.missing).length;
   console.log(`\nDone: ${path.relative(process.cwd(), output)} (${fmt(total)})`);
-  if (missing) console.log(`${missing} clip(s) missing; rendered as placeholders. See footage.md.`);
+  if (missing) console.log(`${missing} clip(s) missing a source file or mark time; rendered as placeholders. See footage.md.`);
 }
 
 main().catch((err) => {

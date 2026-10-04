@@ -78,4 +78,4 @@ assets/fonts/        caption font (SIL Open Font License)
 npm run compilation -- content/disrespectful-ufc-moments
 ```
 
-See `content/disrespectful-ufc-moments/footage.md` for the clip list and the timeline fields.
+Each project has a `footage.md` with its clip list and instructions: `content/disrespectful-ufc-moments/`, `content/ufc-332-top-5-finishes/`. Timelines can define named `marks` (one timestamp per moment) that several clips reference, e.g. `"start": "pinas-12"`.

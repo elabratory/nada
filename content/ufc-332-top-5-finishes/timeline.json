@@ -1,0 +1,119 @@
+{
+  "output": "ufc-332-top-5-finishes.mp4",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "music": { "file": "music.mp3", "volume": 0.15 },
+  "marks": {
+    "wint": null,
+    "kopylov": null,
+    "talbott": null,
+    "rodriguez": null,
+    "walker": null,
+    "pinas": null
+  },
+  "segments": [
+    { "type": "card", "kicker": "UFC 332 · SALT LAKE CITY", "title": "TOP 5 FINISHES", "subtitle": "a record 11 knockouts · ranked by the fans", "duration": 4 },
+
+    { "type": "card", "kicker": "HONOURABLE MENTION", "title": "23 SECONDS", "subtitle": "Anthony Wint", "duration": 2.5 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "wint-1", "end": "wint+25",
+      "find": "Anthony Wint vs Lucas Armand: set \"wint\" to the opening bell of the fight",
+      "label": "ANTHONY WINT def. LUCAS ARMAND · TKO · R1 0:23",
+      "texts": [
+        { "at": 1, "duration": 6, "text": "STRAIGHT TO THE FENCE..." },
+        { "at": 18, "style": "punch", "text": "FASTEST FINISH OF THE NIGHT" }
+      ]
+    },
+
+    { "type": "card", "kicker": "#5", "title": "ROMAN KOPYLOV", "subtitle": "vs Ateba Gautier", "duration": 3 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "kopylov-12", "end": "kopylov+12",
+      "find": "Kopylov vs Gautier: set \"kopylov\" to the moment the straight left lands",
+      "label": "ROMAN KOPYLOV def. ATEBA GAUTIER · TKO · R1 3:12",
+      "texts": [
+        { "at": 1, "duration": 7, "text": "THE HYPED, UNBEATEN PROSPECT..." },
+        { "at": 12, "duration": 6, "style": "punch", "text": "ONE STRAIGHT LEFT" }
+      ]
+    },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "kopylov-2.5", "end": "kopylov+1.5", "speed": 0.4, "freezeEnd": 1,
+      "find": "Kopylov replay (uses the same \"kopylov\" mark)",
+      "label": "REPLAY",
+      "texts": [{ "at": 3, "style": "punch", "text": "$100K BONUS" }]
+    },
+
+    { "type": "card", "kicker": "#4", "title": "PAYTON TALBOTT", "subtitle": "vs Deiveson Figueiredo", "duration": 3 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "talbott-10", "end": "talbott+18",
+      "find": "Talbott vs Figueiredo: set \"talbott\" to the moment the right hand drops Figueiredo",
+      "label": "PAYTON TALBOTT def. DEIVESON FIGUEIREDO · TKO · R1 2:09",
+      "texts": [
+        { "at": 1, "duration": 8, "text": "CO-MAIN EVENT vs A FORMER 2x CHAMP" },
+        { "at": 20, "duration": 7, "style": "punch", "text": "2 FORMER CHAMPS. 2 FIGHTS." }
+      ]
+    },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "talbott-2.5", "end": "talbott+1.5", "speed": 0.4, "freezeEnd": 1,
+      "find": "Talbott replay (uses the same \"talbott\" mark)",
+      "label": "REPLAY",
+      "texts": [{ "at": 3, "style": "punch", "text": "CRISP." }]
+    },
+
+    { "type": "card", "kicker": "#3", "title": "IMANOL RODRIGUEZ", "subtitle": "vs Alden Coria", "duration": 3 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "rodriguez-12", "end": "rodriguez+8",
+      "find": "Rodriguez vs Coria: set \"rodriguez\" to the moment the front kick lands to the body",
+      "label": "IMANOL RODRIGUEZ def. ALDEN CORIA · TKO (BODY KICK) · R1 3:11",
+      "texts": [
+        { "at": 1, "duration": 8, "text": "DANIEL CORMIER'S PROTÉGÉ" },
+        { "at": 12, "duration": 7, "style": "punch", "text": "YOU COULD HEAR THE SCREAM" }
+      ]
+    },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "rodriguez-2.5", "end": "rodriguez+1.5", "speed": 0.4, "freezeEnd": 1,
+      "find": "Rodriguez replay (uses the same \"rodriguez\" mark)",
+      "label": "REPLAY",
+      "texts": [{ "at": 3, "style": "punch", "text": "$100K BONUS" }]
+    },
+
+    { "type": "card", "kicker": "#2", "title": "JOHNNY WALKER", "subtitle": "vs Mick Parkin", "duration": 3 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "walker-12", "end": "walker+7",
+      "find": "Walker vs Parkin: set \"walker\" to the moment the clinch knee lands",
+      "label": "JOHNNY WALKER def. MICK PARKIN · KO (KNEE) · R1 3:35",
+      "texts": [
+        { "at": 1, "duration": 8, "text": "HIS HEAVYWEIGHT DEBUT" },
+        { "at": 12, "duration": 7, "style": "punch", "text": "OUT COLD" }
+      ]
+    },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "walker-2.5", "end": "walker+1.5", "speed": 0.4, "freezeEnd": 1.5,
+      "find": "Walker replay (uses the same \"walker\" mark)",
+      "label": "REPLAY",
+      "texts": [{ "at": 2, "text": "\"I DON'T THINK THERE'S NO HEAVYWEIGHT THAT CAN FIGHT LIKE ME\"" }]
+    },
+
+    { "type": "card", "kicker": "#1", "title": "DAMIAN PINAS", "subtitle": "vs Andrey Pulyaev", "duration": 3.5 },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "pinas-12", "end": "pinas+7",
+      "find": "Pinas vs Pulyaev: set \"pinas\" to the moment the uppercut lands",
+      "label": "DAMIAN PINAS def. ANDREY PULYAEV · KO (UPPERCUT) · R1 1:15",
+      "texts": [
+        { "at": 1, "duration": 8, "text": "75 SECONDS IN..." },
+        { "at": 12, "duration": 7, "style": "punch", "text": "THE SHADOW REALM" }
+      ]
+    },
+    {
+      "type": "clip", "file": "sources/ufc332.mp4", "start": "pinas-2.5", "end": "pinas+1.5", "speed": 0.4, "freezeEnd": 2,
+      "find": "Pinas replay (uses the same \"pinas\" mark)",
+      "label": "REPLAY",
+      "texts": [
+        { "at": 1, "duration": 5.5, "text": "ROGAN: \"MIGHT BE THE SCARIEST GUY IN THE DIVISION\"" },
+        { "at": 7, "text": "FANS: \"I DON'T THINK ANYONE CAN STAND WITH DAMIAN PINAS\"" }
+      ]
+    },
+
+    { "type": "card", "kicker": "YOUR TURN", "title": "WHICH ONE WAS #1?", "subtitle": "comment below · subscribe for more", "duration": 5 }
+  ]
+}
